@@ -1,0 +1,314 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="
+             http://maven.apache.org/POM/4.0.0
+             https://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <!-- ============================================================= -->
+    <!-- Project coordinates                                           -->
+    <!-- ============================================================= -->
+
+    <groupId>com.bpcl.ocr</groupId>
+    <artifactId>bpcl-et-receipt-ocr</artifactId>
+    <version>0.1.0-SNAPSHOT</version>
+    <packaging>jar</packaging>
+
+    <name>BPCL Electronic Totalizer Receipt OCR</name>
+
+    <description>
+        Java desktop application for scanning, parsing and comparing
+        BPCL Electronic Totalizer receipt readings.
+    </description>
+
+    <url>
+        https://github.com/sivamskumar/BPCL-ET-Receipt-OCR
+    </url>
+
+    <!-- ============================================================= -->
+    <!-- Project properties                                            -->
+    <!-- ============================================================= -->
+
+    <properties>
+
+        <!-- Java -->
+        <java.version>17</java.version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
+
+        <!-- Encoding -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+
+        <!-- OCR and image processing -->
+        <tess4j.version>5.12.0</tess4j.version>
+        <opencv.version>4.9.0-0</opencv.version>
+
+        <!-- Logging -->
+        <slf4j.version>2.0.17</slf4j.version>
+        <logback.version>1.5.18</logback.version>
+
+        <!-- File and text utilities -->
+        <commons.io.version>2.19.0</commons.io.version>
+        <commons.lang3.version>3.17.0</commons.lang3.version>
+
+        <!-- Reporting -->
+        <apache.poi.version>5.4.1</apache.poi.version>
+        <pdfbox.version>3.0.4</pdfbox.version>
+
+        <!-- JSON -->
+        <jackson.version>2.19.0</jackson.version>
+
+        <!-- Testing -->
+        <junit.version>5.13.4</junit.version>
+        <assertj.version>3.27.3</assertj.version>
+        <mockito.version>5.18.0</mockito.version>
+
+        <!-- Maven plugins -->
+        <maven.compiler.plugin.version>3.15.0</maven.compiler.plugin.version>
+        <maven.surefire.plugin.version>3.5.3</maven.surefire.plugin.version>
+        <maven.jar.plugin.version>3.4.2</maven.jar.plugin.version>
+        <maven.clean.plugin.version>3.4.1</maven.clean.plugin.version>
+        <maven.resources.plugin.version>3.3.1</maven.resources.plugin.version>
+        <maven.enforcer.plugin.version>3.5.0</maven.enforcer.plugin.version>
+
+    </properties>
+
+    <!-- ============================================================= -->
+    <!-- Dependencies                                                  -->
+    <!-- ============================================================= -->
+
+    <dependencies>
+
+        <!-- ========================================================= -->
+        <!-- OCR                                                       -->
+        <!-- ========================================================= -->
+
+        <dependency>
+            <groupId>net.sourceforge.tess4j</groupId>
+            <artifactId>tess4j</artifactId>
+            <version>${tess4j.version}</version>
+        </dependency>
+
+        <!-- ========================================================= -->
+        <!-- OpenCV image processing                                  -->
+        <!-- Includes native libraries for supported platforms        -->
+        <!-- ========================================================= -->
+
+        <dependency>
+            <groupId>org.openpnp</groupId>
+            <artifactId>opencv</artifactId>
+            <version>${opencv.version}</version>
+        </dependency>
+
+        <!-- ========================================================= -->
+        <!-- Logging                                                   -->
+        <!-- ========================================================= -->
+
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-api</artifactId>
+            <version>${slf4j.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+            <version>${logback.version}</version>
+            <scope>runtime</scope>
+        </dependency>
+
+        <!-- ========================================================= -->
+        <!-- General-purpose utilities                                -->
+        <!-- ========================================================= -->
+
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+            <version>${commons.io.version}</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.apache.commons</groupId>
+            <artifactId>commons-lang3</artifactId>
+            <version>${commons.lang3.version}</version>
+        </dependency>
+
+        <!-- ========================================================= -->
+        <!-- Excel reporting                                           -->
+        <!-- ========================================================= -->
+
+        <dependency>
+            <groupId>org.apache.poi</groupId>
+            <artifactId>poi-ooxml</artifactId>
+            <version>${apache.poi.version}</version>
+        </dependency>
+
+        <!-- ========================================================= -->
+        <!-- PDF reporting                                             -->
+        <!-- ========================================================= -->
+
+        <dependency>
+            <groupId>org.apache.pdfbox</groupId>
+            <artifactId>pdfbox</artifactId>
+            <version>${pdfbox.version}</version>
+        </dependency>
+
+        <!-- ========================================================= -->
+        <!-- JSON configuration and diagnostic output                  -->
+        <!-- ========================================================= -->
+
+        <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>${jackson.version}</version>
+        </dependency>
+
+        <!-- ========================================================= -->
+        <!-- Testing                                                   -->
+        <!-- ========================================================= -->
+
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <version>${junit.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.assertj</groupId>
+            <artifactId>assertj-core</artifactId>
+            <version>${assertj.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>org.mockito</groupId>
+            <artifactId>mockito-junit-jupiter</artifactId>
+            <version>${mockito.version}</version>
+            <scope>test</scope>
+        </dependency>
+
+    </dependencies>
+
+    <!-- ============================================================= -->
+    <!-- Build configuration                                           -->
+    <!-- ============================================================= -->
+
+    <build>
+
+        <finalName>bpcl-et-receipt-ocr</finalName>
+
+        <resources>
+
+            <resource>
+                <directory>src/main/resources</directory>
+                <filtering>false</filtering>
+            </resource>
+
+            <!-- Configuration files kept outside the JAR can also be -->
+            <!-- copied into the build output when they are introduced -->
+
+        </resources>
+
+        <plugins>
+
+            <!-- Compile using Java 17 language/API compatibility -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>${maven.compiler.plugin.version}</version>
+                <configuration>
+                    <release>${java.version}</release>
+                    <encoding>${project.build.sourceEncoding}</encoding>
+                    <parameters>true</parameters>
+                    <showWarnings>true</showWarnings>
+                </configuration>
+            </plugin>
+
+            <!-- Execute JUnit 5 tests -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>${maven.surefire.plugin.version}</version>
+                <configuration>
+                    <useModulePath>false</useModulePath>
+                    <failIfNoTests>false</failIfNoTests>
+                </configuration>
+            </plugin>
+
+            <!-- Build the application JAR -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven.jar.plugin.version}</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
+                            <mainClass>com.bpcl.ocr.Main</mainClass>
+                        </manifest>
+                        <manifestEntries>
+                            <Implementation-Title>
+                                BPCL Electronic Totalizer Receipt OCR
+                            </Implementation-Title>
+                            <Implementation-Version>
+                                ${project.version}
+                            </Implementation-Version>
+                        </manifestEntries>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <!-- Clean build output -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-clean-plugin</artifactId>
+                <version>${maven.clean.plugin.version}</version>
+            </plugin>
+
+            <!-- Copy application resources -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <version>${maven.resources.plugin.version}</version>
+            </plugin>
+
+            <!-- Guard against unsupported Maven and Java versions -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>${maven.enforcer.plugin.version}</version>
+
+                <executions>
+                    <execution>
+                        <id>enforce-build-environment</id>
+                        <goals>
+                            <goal>enforce</goal>
+                        </goals>
+
+                        <configuration>
+                            <rules>
+
+                                <requireMavenVersion>
+                                    <version>[3.9.0,)</version>
+                                </requireMavenVersion>
+
+                                <requireJavaVersion>
+                                    <version>[17,)</version>
+                                </requireJavaVersion>
+
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+        </plugins>
+
+    </build>
+
+</project>
