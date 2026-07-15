@@ -249,7 +249,7 @@
                         <manifest>
                             <addClasspath>true</addClasspath>
                             <classpathPrefix>lib/</classpathPrefix>
-                            <mainClass>com.bpcl.ocr.Main</mainClass>
+                            <mainClass>com.bpcl.ocr.bootstrap.Application</mainClass>
                         </manifest>
                         <manifestEntries>
                             <Implementation-Title>
