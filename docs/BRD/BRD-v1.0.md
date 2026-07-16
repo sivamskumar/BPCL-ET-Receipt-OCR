@@ -405,3 +405,389 @@ The following stakeholders participate in the project.
 ## End of Business Overview
 
 The remaining sections of this Business Requirements Document will define detailed functional requirements, business rules, workflows, user interfaces, reports and acceptance criteria.
+
+# 9. Functional Requirements
+
+## 9.1 Introduction
+
+This section defines the functional capabilities that shall be provided by the Fuel Station Shift Reconciliation System.
+
+Each functional requirement is assigned:
+
+- Functional Requirement ID
+- Module Identifier
+- Priority
+- Actors
+- Description
+- Preconditions
+- Postconditions
+- Acceptance Criteria
+
+Priority definitions:
+
+| Priority | Description |
+|-----------|-------------|
+| Critical | Mandatory for successful operation of the application. |
+| High | Required for Version 1.0 release. |
+| Medium | Important but may be deferred if necessary. |
+| Low | Future enhancement. |
+
+---
+
+# 9.2 Authentication Module
+
+---
+
+## FR-001 — User Login
+
+**Module ID**
+
+AUTH-001
+
+**Priority**
+
+Critical
+
+**Actors**
+
+- Employee
+- Reviewer
+- Approver
+- Administrator
+- Auditor
+
+### Business Requirement
+
+The system shall authenticate users using their assigned username and password before granting access to the application.
+
+### Preconditions
+
+- User account exists.
+- User account is active.
+- User account is not locked.
+
+### Postconditions
+
+- User session is established.
+- User role is identified.
+- Appropriate dashboard is displayed.
+
+### Acceptance Criteria
+
+- Valid credentials allow login.
+- Invalid credentials display an error message.
+- Locked users cannot log in.
+- Inactive users cannot log in.
+
+---
+
+## FR-002 — User Logout
+
+**Module ID**
+
+AUTH-002
+
+**Priority**
+
+High
+
+**Actors**
+
+All authenticated users.
+
+### Business Requirement
+
+The system shall allow authenticated users to securely terminate their session.
+
+### Preconditions
+
+User is logged in.
+
+### Postconditions
+
+- User session is invalidated.
+- User is redirected to the Login page.
+
+### Acceptance Criteria
+
+- Logout successfully terminates the session.
+- Previously accessed pages cannot be reopened using the browser Back button.
+
+---
+
+## FR-003 — Password Change
+
+**Module ID**
+
+AUTH-003
+
+**Priority**
+
+High
+
+**Actors**
+
+All authenticated users.
+
+### Business Requirement
+
+The system shall allow users to change their password after successful authentication.
+
+### Preconditions
+
+- User is authenticated.
+- Current password is entered correctly.
+
+### Postconditions
+
+- Password is updated.
+- Previous password becomes invalid.
+
+### Acceptance Criteria
+
+- Current password must be validated.
+- New password must satisfy password policy.
+- Confirmation password must match.
+
+---
+
+## FR-004 — Role Based Access Control
+
+**Module ID**
+
+AUTH-004
+
+**Priority**
+
+Critical
+
+### Business Requirement
+
+The system shall restrict access to functions based on the authenticated user's assigned role.
+
+### Roles
+
+- Employee
+- Reviewer
+- Approver
+- Administrator
+- Auditor
+
+### Acceptance Criteria
+
+Users shall only access screens and functions authorized for their assigned role.
+
+---
+
+## FR-005 — Session Timeout
+
+**Module ID**
+
+AUTH-005
+
+**Priority**
+
+High
+
+### Business Requirement
+
+The system shall automatically terminate inactive user sessions after the configured timeout period.
+
+### Acceptance Criteria
+
+- Inactive sessions expire automatically.
+- User shall log in again to continue.
+
+---
+
+# 9.3 Organization Module
+
+---
+
+## FR-006 — Organization Management
+
+**Module ID**
+
+ORG-001
+
+**Priority**
+
+Medium
+
+### Business Requirement
+
+The system shall allow authorized administrators to create and maintain organization information.
+
+### Organization Information
+
+- Organization Code
+- Organization Name
+- Address
+- Contact Details
+- Active Status
+
+---
+
+## FR-007 — View Organization
+
+**Module ID**
+
+ORG-002
+
+The system shall allow authorized users to view organization information.
+
+---
+
+## FR-008 — Update Organization
+
+**Module ID**
+
+ORG-003
+
+The system shall allow authorized administrators to modify organization information.
+
+---
+
+## FR-009 — Activate / Deactivate Organization
+
+**Module ID**
+
+ORG-004
+
+The system shall allow administrators to activate or deactivate organizations without deleting historical data.
+
+---
+
+# 9.4 Fuel Station Module
+
+---
+
+## FR-010 — Fuel Station Management
+
+**Module ID**
+
+STN-001
+
+### Business Requirement
+
+The system shall allow administrators to maintain fuel station information.
+
+Station information includes:
+
+- Station Code
+- Station Name
+- Address
+- Contact Details
+- Time Zone
+- Active Status
+
+---
+
+## FR-011 — View Fuel Station
+
+**Module ID**
+
+STN-002
+
+The system shall allow authorized users to view fuel station details.
+
+---
+
+## FR-012 — Update Fuel Station
+
+**Module ID**
+
+STN-003
+
+The system shall allow administrators to update station information.
+
+---
+
+## FR-013 — Activate / Deactivate Fuel Station
+
+**Module ID**
+
+STN-004
+
+The system shall allow administrators to activate or deactivate stations while preserving historical data.
+
+---
+
+## FR-014 — Assign Users to Station
+
+**Module ID**
+
+STN-005
+
+The system shall allow administrators to assign authorized users to one or more fuel stations.
+
+---
+
+# 9.5 Dispenser Unit Module
+
+---
+
+## FR-015 — Register Dispenser Unit
+
+**Module ID**
+
+DU-001
+
+### Business Requirement
+
+The system shall allow administrators to register dispenser units.
+
+The following information shall be maintained:
+
+- DU Serial Number
+- Display Name
+- Manufacturer
+- Model
+- Active Status
+
+---
+
+## FR-016 — View Dispenser Unit
+
+**Module ID**
+
+DU-002
+
+The system shall allow authorized users to view dispenser unit details.
+
+---
+
+## FR-017 — Update Dispenser Unit
+
+**Module ID**
+
+DU-003
+
+The system shall allow administrators to modify dispenser unit information.
+
+---
+
+## FR-018 — Activate / Deactivate Dispenser Unit
+
+**Module ID**
+
+DU-004
+
+The system shall allow administrators to activate or deactivate dispenser units while preserving historical transactions.
+
+---
+
+## FR-019 — Validate DU Serial Number
+
+**Module ID**
+
+DU-005
+
+### Business Requirement
+
+The system shall validate that uploaded Start and End Reading receipts belong to the same normalized DU Serial Number before reconciliation processing begins.
+
+### Acceptance Criteria
+
+- Matching DU Serial Numbers allow processing.
+- Mismatched DU Serial Numbers require review and prevent automatic reconciliation.
