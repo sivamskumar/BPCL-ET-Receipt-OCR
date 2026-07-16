@@ -791,3 +791,574 @@ The system shall validate that uploaded Start and End Reading receipts belong to
 
 - Matching DU Serial Numbers allow processing.
 - Mismatched DU Serial Numbers require review and prevent automatic reconciliation.
+
+---
+
+# 9.6 Employee Management Module
+
+## FR-020 — Create Employee
+
+**Module ID:** EMP-001  
+**Priority:** High  
+**Primary Actor:** Administrator
+
+### Business Requirement
+
+The system shall allow an authorized administrator to create an employee record.
+
+### Employee Information
+
+- Employee Code
+- Employee Name
+- Mobile Number
+- Email Address, where applicable
+- Assigned Station or Stations
+- Active Status
+
+### Preconditions
+
+- The administrator is authenticated.
+- The administrator has employee-management permission.
+
+### Postconditions
+
+- A new employee record is created.
+- The action is recorded in the audit history.
+
+### Acceptance Criteria
+
+- Employee Code is mandatory.
+- Employee Code must be unique within the organization.
+- Employee Name is mandatory.
+- Duplicate employee records shall be prevented.
+- The employee shall be available for nozzle assignment after activation.
+
+---
+
+## FR-021 — View Employees
+
+**Module ID:** EMP-002  
+**Priority:** High  
+**Primary Actors:** Administrator, Manager, Reviewer
+
+### Business Requirement
+
+The system shall allow authorized users to view employees available within their permitted organization or stations.
+
+### Acceptance Criteria
+
+- Users can search by Employee Code or Employee Name.
+- Users can filter by station and active status.
+- Users shall only view employees within their permitted scope.
+
+---
+
+## FR-022 — Update Employee
+
+**Module ID:** EMP-003  
+**Priority:** High  
+**Primary Actor:** Administrator
+
+### Business Requirement
+
+The system shall allow an authorized administrator to update employee information.
+
+### Acceptance Criteria
+
+- Historical shift records shall retain the employee details recorded for those shifts.
+- Employee Code uniqueness shall be maintained.
+- All significant changes shall be audited.
+
+---
+
+## FR-023 — Activate or Deactivate Employee
+
+**Module ID:** EMP-004  
+**Priority:** High  
+**Primary Actor:** Administrator
+
+### Business Requirement
+
+The system shall allow an administrator to activate or deactivate an employee without deleting historical records.
+
+### Acceptance Criteria
+
+- An inactive employee cannot be assigned to a new shift.
+- Existing historical shifts remain unchanged.
+- Deactivation shall not delete reconciliation history.
+
+---
+
+## FR-024 — Assign Employee to Station
+
+**Module ID:** EMP-005  
+**Priority:** High  
+**Primary Actor:** Administrator
+
+### Business Requirement
+
+The system shall allow an administrator to associate an employee with one or more permitted fuel stations.
+
+### Acceptance Criteria
+
+- The employee can only access assigned stations unless broader access is authorized.
+- Station assignments can be activated or ended.
+- Historical station assignments shall be retained.
+
+---
+
+# 9.7 Nozzle Management Module
+
+## FR-025 — Create Nozzle
+
+**Module ID:** NOZ-001  
+**Priority:** High  
+**Primary Actor:** Administrator
+
+### Business Requirement
+
+The system shall allow an administrator to configure nozzle points for a dispenser unit.
+
+### Nozzle Information
+
+- Dispenser Unit
+- Nozzle Number
+- Fuel Type
+- Display Name, where required
+- Active Status
+
+### Acceptance Criteria
+
+- Nozzle Number is mandatory.
+- Nozzle Number must be positive.
+- Nozzle Number must be unique within a dispenser unit.
+- Fuel Type is mandatory.
+- The system shall not permanently restrict a dispenser unit to four nozzles.
+
+---
+
+## FR-026 — View Nozzles
+
+**Module ID:** NOZ-002  
+**Priority:** High
+
+### Business Requirement
+
+The system shall allow authorized users to view nozzle configuration by station and dispenser unit.
+
+### Acceptance Criteria
+
+The displayed information shall include:
+
+- Nozzle Number
+- Fuel Type
+- Assigned Employee
+- Assignment Effective Period
+- Active Status
+
+---
+
+## FR-027 — Update Nozzle
+
+**Module ID:** NOZ-003  
+**Priority:** High  
+**Primary Actor:** Administrator
+
+### Business Requirement
+
+The system shall allow an administrator to update nozzle configuration.
+
+### Acceptance Criteria
+
+- Changes shall not alter completed shift records.
+- Fuel Type changes shall take effect only for new operational periods.
+- Changes shall be recorded in the audit history.
+
+---
+
+## FR-028 — Activate or Deactivate Nozzle
+
+**Module ID:** NOZ-004  
+**Priority:** High  
+**Primary Actor:** Administrator
+
+### Business Requirement
+
+The system shall allow an administrator to activate or deactivate a nozzle.
+
+### Acceptance Criteria
+
+- An inactive nozzle cannot be included in a new shift.
+- Historical readings and sales shall remain available.
+- Deactivation shall not delete prior assignments.
+
+---
+
+## FR-029 — Assign Nozzle to Employee
+
+**Module ID:** NOZ-005  
+**Priority:** Critical  
+**Primary Actor:** Administrator
+
+### Business Requirement
+
+The system shall allow an administrator to assign a nozzle to an employee for a defined effective period.
+
+### Assignment Information
+
+- Station
+- Dispenser Unit
+- Nozzle
+- Employee
+- Effective From Date
+- Effective To Date, where applicable
+
+### Acceptance Criteria
+
+- Only active employees can be assigned.
+- Only active nozzles can be assigned.
+- One nozzle cannot be assigned to multiple employees for an overlapping period.
+- Historical assignments shall be retained.
+- Assignment changes shall not alter completed shift reconciliations.
+
+---
+
+## FR-030 — Resolve Shift Nozzle Assignment
+
+**Module ID:** NOZ-006  
+**Priority:** Critical
+
+### Business Requirement
+
+When a shift is opened, the system shall determine the employee assigned to each nozzle for the shift business date.
+
+### Acceptance Criteria
+
+- Every active nozzle participating in the shift shall have one assigned employee.
+- Missing or conflicting assignments shall prevent shift activation.
+- The assignments used for the shift shall be preserved as a shift snapshot.
+
+---
+
+# 9.8 Fuel Type and Fuel Price Module
+
+## FR-031 — Maintain Fuel Types
+
+**Module ID:** PRICE-001  
+**Priority:** High  
+**Primary Actor:** Administrator
+
+### Business Requirement
+
+The system shall allow authorized administrators to maintain supported fuel types.
+
+### Initial Fuel Types
+
+- Petrol
+- Diesel
+
+### Acceptance Criteria
+
+- Fuel Type Code must be unique.
+- Fuel Type Name is mandatory.
+- Additional fuel types can be added without modifying historical records.
+- An inactive fuel type cannot be assigned to a new nozzle.
+
+---
+
+## FR-032 — Create Fuel Price
+
+**Module ID:** PRICE-002  
+**Priority:** Critical  
+**Primary Actors:** Administrator, Manager
+
+### Business Requirement
+
+The system shall allow an authorized user to record a fuel price for a station and fuel type.
+
+### Fuel Price Information
+
+- Station
+- Fuel Type
+- Price Per Litre
+- Effective From Date and Time
+- Effective To Date and Time, where applicable
+- Active Status
+
+### Acceptance Criteria
+
+- Price Per Litre must be greater than zero.
+- Effective From is mandatory.
+- Overlapping price periods for the same station and fuel type shall not be allowed.
+- Price history shall be preserved.
+
+---
+
+## FR-033 — View Fuel Price History
+
+**Module ID:** PRICE-003  
+**Priority:** High
+
+### Business Requirement
+
+The system shall allow authorized users to view current and historical fuel prices.
+
+### Acceptance Criteria
+
+Users can filter price history by:
+
+- Station
+- Fuel Type
+- Effective Date
+- Active Status
+
+---
+
+## FR-034 — Update Future Fuel Price
+
+**Module ID:** PRICE-004  
+**Priority:** High  
+**Primary Actors:** Administrator, Manager
+
+### Business Requirement
+
+The system shall allow correction of a future fuel price that has not yet been used by an operational shift.
+
+### Acceptance Criteria
+
+- A fuel price already used in a completed reconciliation shall not be silently changed.
+- Historical price corrections require authorized procedures and audit records.
+- Overlapping price periods remain prohibited.
+
+---
+
+## FR-035 — Resolve Effective Fuel Price
+
+**Module ID:** PRICE-005  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall automatically select the fuel price applicable to the station, fuel type and shift date or time.
+
+### Acceptance Criteria
+
+- Exactly one applicable price shall be identified.
+- Missing price configuration shall prevent final sales calculation.
+- Conflicting price configuration shall trigger review.
+- The selected price shall be retained with the shift calculation.
+
+---
+
+# 9.9 Shift Management Module
+
+## FR-036 — Open Shift
+
+**Module ID:** SHIFT-001  
+**Priority:** Critical  
+**Primary Actor:** Employee
+
+### Business Requirement
+
+The system shall allow an authorized employee to open an operational shift for an assigned station and dispenser unit.
+
+### Shift Information
+
+- Station
+- Dispenser Unit
+- DU Serial Number
+- Business Date
+- Shift Number
+- Start Date and Time
+- Participating Employees
+- Assigned Nozzles
+
+### Preconditions
+
+- The employee is authenticated.
+- The station is active.
+- The dispenser unit is active.
+- Nozzle assignments are valid.
+- Required fuel prices are configured.
+
+### Postconditions
+
+- A new shift is created with Open status.
+- Employee and nozzle assignment snapshots are created.
+- The shift-opening action is audited.
+
+### Acceptance Criteria
+
+- Shift Number must be unique for the dispenser unit and business date.
+- Invalid station, DU, employee or nozzle configurations shall prevent opening.
+- The shift shall display all participating employees and nozzles.
+
+---
+
+## FR-037 — View Open Shifts
+
+**Module ID:** SHIFT-002  
+**Priority:** High
+
+### Business Requirement
+
+The system shall allow authorized users to view open shifts within their permitted stations.
+
+### Acceptance Criteria
+
+Users can filter shifts by:
+
+- Station
+- Dispenser Unit
+- Business Date
+- Employee
+- Shift Status
+
+---
+
+## FR-038 — Resume Shift
+
+**Module ID:** SHIFT-003  
+**Priority:** High  
+**Primary Actor:** Employee
+
+### Business Requirement
+
+The system shall allow an authorized employee to resume an incomplete shift.
+
+### Acceptance Criteria
+
+- Previously entered information shall be retained.
+- The employee shall continue from the next required activity.
+- Closed or cancelled shifts cannot be resumed through the normal workflow.
+
+---
+
+## FR-039 — Update Open Shift Information
+
+**Module ID:** SHIFT-004  
+**Priority:** High  
+**Primary Actors:** Employee, Supervisor
+
+### Business Requirement
+
+The system shall allow permitted shift information to be corrected while the shift remains open.
+
+### Acceptance Criteria
+
+- Critical changes shall be restricted after receipt confirmation.
+- All significant changes shall be audited.
+- Historical assignment snapshots shall not be changed without authorization.
+
+---
+
+## FR-040 — Cancel Shift
+
+**Module ID:** SHIFT-005  
+**Priority:** High  
+**Primary Actors:** Supervisor, Manager
+
+### Business Requirement
+
+The system shall allow an authorized user to cancel an invalid or incorrectly opened shift.
+
+### Acceptance Criteria
+
+- A cancellation reason is mandatory.
+- Cancelled shifts remain available for audit.
+- A cancelled shift cannot be reconciled or approved.
+- Cancellation shall not physically delete uploaded records.
+
+---
+
+## FR-041 — Maintain Shift Status
+
+**Module ID:** SHIFT-006  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall maintain the operational status of every shift throughout its lifecycle.
+
+### Supported Statuses
+
+- Open
+- Start Receipt Uploaded
+- End Receipt Uploaded
+- OCR Completed
+- Readings Confirmed
+- Payments Entered
+- Reconciled
+- Submitted for Level-1 Review
+- Returned to Employee
+- Resubmitted
+- Forwarded for Level-2 Approval
+- Approved
+- Closed
+- Cancelled
+
+### Acceptance Criteria
+
+- Status transitions shall follow the approved business workflow.
+- Unauthorized status changes shall be prevented.
+- Every status transition shall be audited.
+
+---
+
+## FR-042 — Preserve Shift Assignment Snapshot
+
+**Module ID:** SHIFT-007  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall preserve the employees, nozzles and fuel types used during a shift.
+
+### Acceptance Criteria
+
+- Later changes to master data shall not change previous shift calculations.
+- Historical shifts shall display the assignments used at the time of operation.
+
+---
+
+## FR-043 — Validate Shift Completeness
+
+**Module ID:** SHIFT-008  
+**Priority:** Critical
+
+### Business Requirement
+
+Before reconciliation submission, the system shall validate that all required shift activities are complete.
+
+### Required Conditions
+
+- Start Receipt is available.
+- End Receipt is available.
+- Receipt values are confirmed.
+- Fuel-sales calculation is complete.
+- Employee collections are entered.
+- Required adjustments are recorded.
+- Reconciliation is calculated.
+
+### Acceptance Criteria
+
+The system shall clearly identify incomplete activities and prevent submission until mandatory information is completed.
+
+---
+
+## FR-044 — Close Approved Shift
+
+**Module ID:** SHIFT-009  
+**Priority:** Critical  
+**Primary Actor:** Authorized Manager or System Workflow
+
+### Business Requirement
+
+The system shall close a shift after all required approvals are completed.
+
+### Acceptance Criteria
+
+- Only an approved shift can be closed.
+- Closed shifts become read-only during normal operation.
+- Reopening requires an authorized correction process.
+- Closure date, time and user shall be recorded.
