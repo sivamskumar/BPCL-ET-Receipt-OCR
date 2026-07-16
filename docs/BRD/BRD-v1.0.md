@@ -3370,3 +3370,947 @@ Approved shifts shall become read-only.
 Deleted business transactions are not permitted.
 
 Business records shall be retained for audit purposes.
+
+---
+
+# 11. Non-Functional Requirements
+
+## 11.1 Introduction
+
+This section defines the quality, security, usability, performance, availability and operational requirements of the Fuel Station Shift Reconciliation System.
+
+These requirements apply across all functional modules unless explicitly stated otherwise.
+
+---
+
+# 11.2 Usability and Responsive Access
+
+## NFR-001 — Responsive Web Application
+
+**Priority:** Critical
+
+The application shall provide a responsive user interface suitable for:
+
+- Desktop computers
+- Laptop computers
+- Tablets
+- Mobile phones
+
+### Acceptance Criteria
+
+- Primary workflows shall be usable without mandatory horizontal scrolling.
+- Controls shall resize appropriately for different screen sizes.
+- Mobile users shall be able to complete receipt upload and reconciliation workflows.
+- Important information shall remain readable on supported devices.
+
+---
+
+## NFR-002 — Mobile Receipt Capture
+
+**Priority:** Critical
+
+The application shall support receipt-image selection and camera-based capture on compatible mobile devices.
+
+### Acceptance Criteria
+
+- Users can capture a new image using the device camera.
+- Users can select an existing image.
+- Users can preview the selected image.
+- Users can replace the image before submission.
+- Unsupported devices shall still provide a standard file-upload option.
+
+---
+
+## NFR-003 — User-Friendly Navigation
+
+**Priority:** High
+
+The application shall provide clear and consistent navigation appropriate to the user’s assigned role.
+
+### Acceptance Criteria
+
+- Users can identify their current module and workflow stage.
+- Frequently used actions are easily accessible.
+- Navigation options unavailable to the user’s role are hidden or disabled.
+- Users receive confirmation before performing critical actions.
+
+---
+
+## NFR-004 — Clear Validation Messages
+
+**Priority:** High
+
+The application shall display clear, business-friendly messages when information is missing, incorrect or requires review.
+
+### Acceptance Criteria
+
+- Messages identify the affected field or activity.
+- Technical exception details are not shown to ordinary users.
+- Validation messages explain how the user can correct the issue.
+- Errors shall not remove previously entered valid information.
+
+---
+
+## NFR-005 — Accessibility
+
+**Priority:** Medium
+
+The application should support reasonable accessibility practices.
+
+### Acceptance Criteria
+
+- Form controls have meaningful labels.
+- Status shall not be communicated using colour alone.
+- Keyboard navigation shall be supported for major desktop workflows.
+- Text and controls shall maintain readable contrast.
+
+---
+
+# 11.3 Browser and Device Compatibility
+
+## NFR-006 — Supported Browsers
+
+**Priority:** High
+
+The application shall support current client-approved versions of:
+
+- Google Chrome
+- Microsoft Edge
+- Mobile Chrome
+- Other browsers confirmed during deployment planning
+
+### Acceptance Criteria
+
+- Core workflows behave consistently on supported browsers.
+- Unsupported browsers receive an appropriate message where necessary.
+- Browser compatibility shall be verified before production release.
+
+---
+
+## NFR-007 — Device Compatibility
+
+**Priority:** High
+
+The application shall support commonly used desktop and Android mobile devices approved by the client.
+
+### Acceptance Criteria
+
+- Receipt upload works on approved devices.
+- Denomination and collection-entry screens are usable on mobile devices.
+- Reconciliation summaries remain readable across supported screen sizes.
+
+---
+
+# 11.4 Performance Requirements
+
+## NFR-008 — Standard Page Response Time
+
+**Priority:** High
+
+Under normal operating conditions, ordinary application pages should load within three seconds, excluding network delays beyond the system’s control.
+
+### Acceptance Criteria
+
+- Dashboard and data-entry pages meet the agreed response target under expected load.
+- Performance shall be measured in the approved deployment environment.
+
+---
+
+## NFR-009 — Save Operation Response Time
+
+**Priority:** High
+
+Ordinary save and update operations should complete within three seconds under normal operating conditions.
+
+### Acceptance Criteria
+
+- The user receives visible confirmation after a successful save.
+- Repeated clicks shall not create duplicate transactions.
+- Long-running operations shall display progress or processing status.
+
+---
+
+## NFR-010 — OCR Processing Time
+
+**Priority:** High
+
+Receipt processing should complete within an acceptable operational period based on image size, image quality and server capacity.
+
+### Initial Target
+
+A standard receipt should normally be processed within thirty seconds.
+
+### Acceptance Criteria
+
+- The user can see the processing status.
+- The browser remains usable while processing occurs.
+- Failed or delayed processing can be retried.
+- The final target shall be validated during performance testing.
+
+---
+
+## NFR-011 — Concurrent Users
+
+**Priority:** High
+
+The application shall support multiple users working concurrently without corrupting or overwriting business data.
+
+### Acceptance Criteria
+
+- One user’s actions do not incorrectly affect another user’s session.
+- Concurrent updates are detected and handled.
+- Expected user and station volumes shall be confirmed before performance testing.
+
+---
+
+## NFR-012 — Duplicate Submission Prevention
+
+**Priority:** Critical
+
+The application shall prevent accidental duplicate submission caused by repeated clicks, browser refresh or delayed network responses.
+
+### Acceptance Criteria
+
+- Duplicate shifts, receipts, payments and approvals are prevented.
+- Users receive the result of the original successful action where appropriate.
+
+---
+
+# 11.5 Availability and Reliability
+
+## NFR-013 — Business Availability
+
+**Priority:** High
+
+The application shall be available during the client’s agreed operating hours, excluding approved maintenance periods.
+
+### Acceptance Criteria
+
+- Planned maintenance is communicated in advance.
+- Availability targets shall be finalized after the hosting model is approved.
+- Unexpected failures shall be recorded and investigated.
+
+---
+
+## NFR-014 — Transaction Integrity
+
+**Priority:** Critical
+
+Critical business operations shall either complete fully or leave the system in a valid recoverable state.
+
+### Critical Operations
+
+- Shift creation
+- Receipt confirmation
+- Fuel-sales calculation
+- Collection submission
+- Reconciliation calculation
+- Approval
+- Shift closure
+
+### Acceptance Criteria
+
+- Partial database updates shall not remain after a failed transaction.
+- Users receive an appropriate failure message.
+- Retrying an operation shall not create duplicate records.
+
+---
+
+## NFR-015 — Data Consistency
+
+**Priority:** Critical
+
+Employee totals, shift totals and approval information shall remain internally consistent.
+
+### Acceptance Criteria
+
+- Shift totals equal the sum of employee totals.
+- Reconciliation values can be reproduced from source entries.
+- Inconsistent data prevents final approval.
+- System-calculated values cannot be manually overwritten.
+
+---
+
+## NFR-016 — Concurrent Update Protection
+
+**Priority:** Critical
+
+The application shall detect when another user has modified a record being edited.
+
+### Acceptance Criteria
+
+- The later user is notified of the conflict.
+- Existing changes are not silently overwritten.
+- The user can reload the latest information before continuing.
+
+---
+
+## NFR-017 — Error Recovery
+
+**Priority:** High
+
+The system shall support safe recovery from recoverable technical errors.
+
+### Acceptance Criteria
+
+- Uploaded receipts remain available after OCR failure.
+- Draft collection entries remain available after logout or connection interruption where successfully saved.
+- Failed processing can be retried by an authorized user.
+
+---
+
+# 11.6 Data Accuracy and Precision
+
+## NFR-018 — Monetary Precision
+
+**Priority:** Critical
+
+All monetary calculations shall use precise decimal arithmetic.
+
+### Initial Precision
+
+- Monetary amounts: two decimal places
+- Fuel prices: up to three decimal places
+
+### Acceptance Criteria
+
+- Binary floating-point calculations shall not be used for business amounts.
+- Rounding rules are applied consistently.
+- Final rounding rules shall be confirmed with the client.
+
+---
+
+## NFR-019 — Fuel-Volume Precision
+
+**Priority:** Critical
+
+Fuel-volume readings and calculated quantities shall use precise decimal arithmetic.
+
+### Initial Precision
+
+Fuel volume shall support at least three decimal places.
+
+### Acceptance Criteria
+
+- Start and End VTOT values retain the required precision.
+- Quantity calculations do not lose significant decimal values.
+- The client-approved rounding rule shall be configurable where applicable.
+
+---
+
+## NFR-020 — Reconciliation Tolerance Configuration
+
+**Priority:** Critical
+
+The application shall support a configurable reconciliation tolerance.
+
+### Acceptance Criteria
+
+- The tolerance value can be changed by an authorized administrator.
+- Application code changes are not required to update the tolerance.
+- The effective tolerance used for each reconciliation is retained.
+- The initial production tolerance remains pending client confirmation.
+
+---
+
+# 11.7 OCR Quality Requirements
+
+## NFR-021 — OCR Accuracy
+
+**Priority:** Critical
+
+The application shall aim to extract required receipt fields with sufficient accuracy for operational use.
+
+### Acceptance Criteria
+
+- DU Serial Number, Nozzle Number, ATOT and VTOT are individually validated.
+- Low-confidence fields require manual review.
+- OCR performance is evaluated using representative client receipt samples.
+- Final acceptance targets shall be defined after sample-image testing.
+
+---
+
+## NFR-022 — OCR Confidence Threshold
+
+**Priority:** High
+
+The confidence threshold used to request manual review shall be configurable.
+
+### Acceptance Criteria
+
+- Authorized users can update the threshold.
+- The effective threshold is consistently applied.
+- Mandatory validation rules override confidence values where necessary.
+
+---
+
+## NFR-023 — Preserve Original OCR Information
+
+**Priority:** Critical
+
+Original OCR results shall be retained even when users correct extracted values.
+
+### Acceptance Criteria
+
+- Original extracted text remains available.
+- Corrected values are separately recorded.
+- Correction history identifies the user, reason and timestamp.
+
+---
+
+# 11.8 Maintainability and Supportability
+
+## NFR-024 — Configurable Business Settings
+
+**Priority:** High
+
+Frequently changing business settings shall be configurable without source-code changes.
+
+### Configurable Settings May Include
+
+- Reconciliation tolerance
+- OCR confidence threshold
+- Upload size limit
+- Supported image formats
+- Session timeout
+- Cash denominations
+- Retention period
+- Station-level settings
+
+---
+
+## NFR-025 — Application Logging
+
+**Priority:** High
+
+The application shall maintain logs needed for operational support and technical troubleshooting.
+
+### Acceptance Criteria
+
+- Errors include sufficient diagnostic context.
+- Sensitive credentials and passwords are never written to logs.
+- Log access is restricted.
+- Log retention is configurable.
+
+---
+
+## NFR-026 — Modular Design
+
+**Priority:** High
+
+The application shall be designed so that receipt processing, reconciliation, payment collection and reporting can be maintained independently.
+
+### Acceptance Criteria
+
+- Business rules are not permanently tied to the user interface.
+- OCR technology can be enhanced or replaced without redesigning the complete application.
+- New stations and nozzle configurations do not require code changes.
+
+---
+
+## NFR-027 — Database Schema Version Control
+
+**Priority:** High
+
+Database structural changes shall be version-controlled and consistently applied across environments.
+
+### Acceptance Criteria
+
+- Every database change has an identifiable version.
+- Previously deployed database changes are not silently modified.
+- Database upgrades can be verified before production deployment.
+
+---
+
+# 12. Security Requirements
+
+## SEC-001 — Authentication Required
+
+**Priority:** Critical
+
+All business functions shall require authenticated access, except explicitly approved public technical endpoints.
+
+---
+
+## SEC-002 — Secure Password Storage
+
+**Priority:** Critical
+
+Passwords shall never be stored or transmitted as plain text.
+
+### Acceptance Criteria
+
+- Passwords are stored using an approved secure password-hashing method.
+- Users and administrators cannot retrieve existing passwords.
+- Password reset creates a new credential rather than revealing the old password.
+
+---
+
+## SEC-003 — Role-Based Authorization
+
+**Priority:** Critical
+
+The system shall authorize functions based on assigned user roles.
+
+### Initial Roles
+
+- Employee
+- Reviewer
+- Approver
+- Administrator
+- Auditor
+
+### Acceptance Criteria
+
+- Employees cannot perform approval functions.
+- Reviewers cannot perform Level-2 approval unless separately authorized.
+- Auditors receive read-only access to approved data.
+- Administrators cannot bypass business approval rules unless explicitly authorized and audited.
+
+---
+
+## SEC-004 — Station-Level Access Restriction
+
+**Priority:** Critical
+
+Users shall only access stations assigned to them unless organization-wide access is granted.
+
+### Acceptance Criteria
+
+- Direct web-address access shall not bypass station restrictions.
+- Search results and reports only display permitted station data.
+- Unauthorized access attempts are rejected and logged.
+
+---
+
+## SEC-005 — Session Security
+
+**Priority:** High
+
+User sessions shall be securely created, maintained and terminated.
+
+### Acceptance Criteria
+
+- Sessions expire after the configured inactivity period.
+- Logout invalidates the active session.
+- Authentication information is protected during transmission.
+- Session identifiers are not exposed in insecure locations.
+
+---
+
+## SEC-006 — Account Locking
+
+**Priority:** High
+
+The system shall lock or temporarily restrict an account after a configurable number of unsuccessful login attempts.
+
+### Acceptance Criteria
+
+- Failed attempts are recorded.
+- The lock threshold is configurable.
+- Authorized administrators can unlock an account.
+- Security events are audited.
+
+---
+
+## SEC-007 — Secure Communication
+
+**Priority:** Critical
+
+Production access shall use encrypted HTTPS communication.
+
+### Acceptance Criteria
+
+- User credentials and business data are encrypted during transmission.
+- Unencrypted production access is redirected or blocked.
+- Certificates are maintained according to the hosting policy.
+
+---
+
+## SEC-008 — Uploaded File Security
+
+**Priority:** Critical
+
+Uploaded receipt files shall be validated and stored securely.
+
+### Acceptance Criteria
+
+- Unsupported and potentially unsafe files are rejected.
+- Original filenames are not directly used as physical storage paths.
+- Users cannot access receipt files outside their permitted stations.
+- Upload size limits are enforced.
+- Path-traversal attempts are prevented.
+
+---
+
+## SEC-009 — Audit Trail Protection
+
+**Priority:** Critical
+
+Audit records shall be protected against ordinary user modification or deletion.
+
+### Acceptance Criteria
+
+- Audit events cannot be edited through standard business screens.
+- Access to audit information is role-controlled.
+- Significant actions identify the responsible user and timestamp.
+
+---
+
+## SEC-010 — Sensitive Data Protection
+
+**Priority:** High
+
+Sensitive configuration and credentials shall not be stored in source-code repositories.
+
+### Acceptance Criteria
+
+- Database passwords are externally configured.
+- Production secrets are not committed to Git.
+- Access to secrets follows the approved deployment policy.
+
+---
+
+## SEC-011 — Approval Segregation
+
+**Priority:** Critical
+
+The approval workflow shall enforce separation between employee submission, Level-1 review and Level-2 approval.
+
+### Acceptance Criteria
+
+- An employee cannot approve their own reconciliation.
+- Level-1 and Level-2 actions are performed by appropriately authorized users.
+- Any permitted exception is explicitly authorized and audited.
+
+---
+
+## SEC-012 — Security Event Recording
+
+**Priority:** High
+
+The system shall record important security events.
+
+### Events Include
+
+- Successful login
+- Failed login
+- Account lock
+- Password change
+- Unauthorized-access attempt
+- Role change
+- Account activation or deactivation
+
+---
+
+# 13. Data Retention and Archival Requirements
+
+## RET-001 — Fourteen-Month Operational Retention
+
+**Priority:** Critical
+
+The system shall retain relevant operational data for at least fourteen months from the applicable business date or transaction date.
+
+### Data Includes
+
+- Shifts
+- Receipt images
+- OCR results
+- Receipt readings
+- Manual corrections
+- Fuel-sales calculations
+- Cash denomination entries
+- UPI terminal entries
+- Card collections
+- Credit sales
+- Adjustments
+- Reconciliations
+- Approval history
+- Generated report metadata
+- Audit events
+
+---
+
+## RET-002 — Retention Calculation
+
+**Priority:** High
+
+Retention eligibility shall be calculated using a clearly defined business date or event timestamp.
+
+### Acceptance Criteria
+
+- The retention calculation is consistent.
+- Records are not removed before completing fourteen months.
+- Records involved in an active investigation or hold shall not be removed.
+
+---
+
+## RET-003 — Archival Before Deletion
+
+**Priority:** High
+
+Where required by client policy, eligible records shall be archived before permanent deletion.
+
+### Acceptance Criteria
+
+- Archive output is complete and verifiable.
+- Receipt images and related database information remain associated.
+- Archived records can be retrieved through an authorized process.
+- The final archive-versus-delete policy requires client approval.
+
+---
+
+## RET-004 — Controlled Data Disposal
+
+**Priority:** Critical
+
+Expired business data shall not be deleted through ordinary user screens.
+
+### Acceptance Criteria
+
+- Disposal is performed only by an authorized scheduled or administrative process.
+- Deletion or archival activity is audited.
+- Related records and receipt files are handled consistently.
+- Failed disposal does not leave partially removed business records.
+
+---
+
+## RET-005 — Retention Configuration
+
+**Priority:** High
+
+The retention period shall be configurable by an authorized administrator, subject to client policy.
+
+### Acceptance Criteria
+
+- The initial value is fourteen months.
+- Reducing the period shall require explicit authorization.
+- Changing the setting shall not immediately delete data without a controlled process.
+- Configuration changes are audited.
+
+---
+
+# 14. Backup and Recovery Requirements
+
+## BCK-001 — Database Backup
+
+**Priority:** Critical
+
+The production database shall be backed up according to an approved schedule.
+
+### Acceptance Criteria
+
+- Backup frequency and retention are documented.
+- Backup failures generate an operational alert or support notification.
+- Restore procedures are tested periodically.
+
+---
+
+## BCK-002 — Receipt File Backup
+
+**Priority:** Critical
+
+Uploaded receipt files shall be included in the production backup strategy.
+
+### Acceptance Criteria
+
+- Receipt files and database records can be restored consistently.
+- A database backup alone shall not be considered a complete system backup.
+- Backup access is restricted.
+
+---
+
+## BCK-003 — Recovery Procedure
+
+**Priority:** Critical
+
+A documented recovery process shall exist for database, receipt-file and application failures.
+
+### Acceptance Criteria
+
+- Recovery responsibilities are identified.
+- Recovery steps are tested before production approval.
+- Recovery-time and recovery-point expectations shall be confirmed with the client.
+
+---
+
+# 15. Hosting and Deployment Requirements
+
+## HST-001 — Centralized Web Deployment
+
+**Priority:** High
+
+The system is intended to operate as a centralized web application accessible through approved networks and browsers.
+
+### Business Benefit
+
+- Centralized updates
+- Shared reporting
+- Multi-station expansion
+- No desktop installation for normal users
+
+---
+
+## HST-002 — Hosting Model Confirmation
+
+**Priority:** Critical
+
+The final hosting model shall be confirmed by the client before production deployment.
+
+### Possible Models
+
+- Client office server
+- Client data-centre server
+- Central head-office server
+- Cloud-hosted server
+- Approved managed hosting environment
+
+### Current Status
+
+Pending client confirmation.
+
+---
+
+## HST-003 — Production Environment Components
+
+**Priority:** High
+
+The production environment shall provide the components required for:
+
+- Web application access
+- Backend business processing
+- Database operation
+- Receipt-file storage
+- HTTPS security
+- Backup and recovery
+- Monitoring and logs
+
+The final infrastructure sizing will depend on expected stations, users, receipts and concurrent activity.
+
+---
+
+## HST-004 — Environment Separation
+
+**Priority:** High
+
+Separate environments should be maintained for:
+
+- Development
+- Testing or UAT
+- Production
+
+### Acceptance Criteria
+
+- Test data does not accidentally enter production.
+- Production credentials are not used in development.
+- Deployment changes are validated before production release.
+
+---
+
+## HST-005 — Production Monitoring
+
+**Priority:** High
+
+The production deployment shall provide operational monitoring appropriate to the selected hosting model.
+
+### Monitoring Should Include
+
+- Application availability
+- Application errors
+- Database connectivity
+- Storage availability
+- Backup status
+- OCR processing failures
+- Resource usage where available
+
+---
+
+## HST-006 — Capacity Planning
+
+**Priority:** High
+
+Server and storage capacity shall be planned using expected business volumes.
+
+### Client Inputs Required
+
+- Number of stations
+- Number of dispenser units
+- Number of employees
+- Number of shifts per day
+- Average receipt-image size
+- Expected concurrent users
+- Expected future growth
+
+---
+
+# 16. Compliance and Audit Requirements
+
+## CMP-001 — Complete Business Audit Trail
+
+**Priority:** Critical
+
+The system shall retain a traceable history of important business actions.
+
+### Audited Activities Include
+
+- Master-data changes
+- Shift opening and cancellation
+- Receipt upload
+- OCR completion and failure
+- Manual correction
+- Collection entry
+- Adjustment entry
+- Reconciliation calculation
+- Submission
+- Reviewer action
+- Approver action
+- Shift closure
+
+---
+
+## CMP-002 — Audit Information
+
+Each audit record should contain:
+
+- User
+- Action
+- Date and Time
+- Affected Record
+- Previous Value, where applicable
+- New Value, where applicable
+- Remarks or Reason, where applicable
+- Source information such as IP address, where available
+
+---
+
+## CMP-003 — Historical Reproducibility
+
+**Priority:** Critical
+
+The system shall retain sufficient information to reproduce and explain a completed reconciliation.
+
+### Acceptance Criteria
+
+An authorized reviewer can identify:
+
+- Receipt readings used
+- Fuel prices used
+- Nozzle assignments used
+- Collections entered
+- Adjustments included
+- Tolerance applied
+- Approval actions completed
+
+---
+
+## CMP-004 — Read-Only Approved Records
+
+**Priority:** Critical
+
+Approved and closed shifts shall be read-only during normal operation.
+
+### Acceptance Criteria
+
+- Ordinary users cannot modify approved results.
+- Authorized corrections follow a controlled process.
+- The original approved information remains traceable.
