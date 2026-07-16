@@ -2104,3 +2104,852 @@ The system shall display the values used in fuel-sales calculations.
 - Users can review calculations before payment entry.
 - Values are shown nozzle-wise and employee-wise.
 - Flagged variances are clearly identified.
+
+---
+
+# 9.13 Collection Management Module
+
+## FR-076 — Maintain Cash Denominations
+
+**Module ID:** PAY-001  
+**Priority:** High  
+**Primary Actor:** Administrator
+
+### Business Requirement
+
+The system shall allow authorized administrators to maintain the currency denominations available for cash collection entry.
+
+### Initial Denominations
+
+- ₹500
+- ₹200
+- ₹100
+- ₹50
+- ₹20
+- ₹10
+- ₹5
+- ₹2
+- ₹1
+
+### Acceptance Criteria
+
+- Denomination value must be greater than zero.
+- Duplicate denomination values shall not be allowed for the same currency.
+- Denominations may be activated or deactivated.
+- Historical denomination entries shall remain unchanged.
+
+---
+
+## FR-077 — Enter Cash Denomination Counts
+
+**Module ID:** PAY-002  
+**Priority:** Critical  
+**Primary Actor:** Employee
+
+### Business Requirement
+
+The system shall allow an employee to enter the quantity held for each supported cash denomination.
+
+### Preconditions
+
+- The employee is authenticated.
+- The shift readings are confirmed.
+- Fuel-sales calculation is complete.
+- The employee participates in the shift.
+
+### Acceptance Criteria
+
+- Quantity shall accept non-negative whole numbers only.
+- The employee shall only enter collections for their own reconciliation unless otherwise authorized.
+- Existing entries may be updated before submission.
+- Entered values shall be saved against the shift and employee.
+
+---
+
+## FR-078 — Calculate Cash Denomination Amount
+
+**Module ID:** PAY-003  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the amount for each denomination.
+
+### Calculation
+
+```text
+Denomination Amount =
+    Denomination Value
+  × Quantity
+```
+
+### Acceptance Criteria
+
+- The backend shall perform the calculation.
+- Browser-calculated values shall not be treated as authoritative.
+- The calculated amount shall update when quantity changes.
+- Negative quantities shall not be accepted.
+
+---
+
+## FR-079 — Calculate Employee Cash Total
+
+**Module ID:** PAY-004  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the total physical cash entered by an employee.
+
+### Calculation
+
+```text
+Cash Total =
+    Sum of all Denomination Amounts
+```
+
+### Acceptance Criteria
+
+- The total shall equal the sum of all denomination rows.
+- The total shall be recalculated whenever a denomination count changes.
+- The cash total shall be included in employee reconciliation.
+
+---
+
+## FR-080 — Enter UPI Terminal Collection
+
+**Module ID:** PAY-005  
+**Priority:** Critical  
+**Primary Actor:** Employee
+
+### Business Requirement
+
+The system shall allow an employee to record the total amount received through each UPI terminal used during the shift.
+
+### UPI Collection Information
+
+- UPI Provider or Machine Name, where applicable
+- Terminal ID (TID)
+- Total Amount Received
+- Remarks, where required
+
+### Acceptance Criteria
+
+- TID is mandatory.
+- Total Amount Received must be zero or greater.
+- Multiple UPI terminals may be entered for one employee and shift.
+- Duplicate TID entries for the same employee and shift shall be prevented or clearly validated.
+- The entry shall be associated with the correct employee and shift.
+
+---
+
+## FR-081 — Calculate Employee UPI Total
+
+**Module ID:** PAY-006  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the total UPI amount for an employee by adding all UPI terminal collections.
+
+### Calculation
+
+```text
+UPI Total =
+    Sum of Amounts Recorded for all UPI TIDs
+```
+
+### Acceptance Criteria
+
+- The total shall update when a UPI terminal entry is added, changed or removed.
+- The total shall be included in employee reconciliation.
+- Individual TID values shall remain available for review and audit.
+
+---
+
+## FR-082 — View UPI Terminal Entries
+
+**Module ID:** PAY-007  
+**Priority:** High
+
+### Business Requirement
+
+The system shall allow authorized users to view employee-wise UPI terminal collection details.
+
+### Acceptance Criteria
+
+The display shall include:
+
+- Employee
+- TID
+- UPI Provider or Machine Name
+- Amount
+- Remarks
+- Entered By
+- Entry Date and Time
+
+---
+
+## FR-083 — Enter Card Collection
+
+**Module ID:** PAY-008  
+**Priority:** Critical  
+**Primary Actor:** Employee
+
+### Business Requirement
+
+The system shall allow an employee to record card collections received during the shift.
+
+### Card Collection Information
+
+- Terminal ID or Machine Reference, where applicable
+- Total Card Amount
+- Settlement or Batch Reference, where applicable
+- Remarks
+
+### Acceptance Criteria
+
+- Amount must be zero or greater.
+- Multiple card-terminal entries may be recorded.
+- Each entry shall belong to the correct employee and shift.
+- Card totals shall be included in reconciliation.
+
+---
+
+## FR-084 — Calculate Employee Card Total
+
+**Module ID:** PAY-009  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the total card collection for each employee.
+
+### Calculation
+
+```text
+Card Total =
+    Sum of all Card Collection Entries
+```
+
+### Acceptance Criteria
+
+- The total updates whenever card entries change.
+- Individual card entries remain available for audit.
+- The total is included in employee reconciliation.
+
+---
+
+## FR-085 — Enter Credit Sale
+
+**Module ID:** PAY-010  
+**Priority:** Critical  
+**Primary Actor:** Employee
+
+### Business Requirement
+
+The system shall allow an employee to record fuel sales made on credit.
+
+### Credit Sale Information
+
+- Customer Name
+- Customer or Account Reference
+- Vehicle Number, where applicable
+- Credit Amount
+- Remarks
+
+### Acceptance Criteria
+
+- Customer Name or approved customer reference is mandatory.
+- Credit Amount must be greater than zero.
+- Multiple credit sales may be recorded.
+- Credit entries shall belong to the correct employee and shift.
+- Credit sales shall be included in the accounted amount.
+
+---
+
+## FR-086 — Calculate Employee Credit Total
+
+**Module ID:** PAY-011  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the total credit sales recorded for each employee.
+
+### Calculation
+
+```text
+Credit Total =
+    Sum of all Credit Sale Amounts
+```
+
+### Acceptance Criteria
+
+- The total updates whenever credit entries change.
+- Individual credit details remain available for review.
+- The total is included in employee reconciliation.
+
+---
+
+## FR-087 — Display Employee Collection Summary
+
+**Module ID:** PAY-012  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall display a consolidated collection summary for each employee.
+
+### Summary Information
+
+- Cash Total
+- UPI Total
+- Card Total
+- Credit Total
+- Gross Collection Total
+
+### Calculation
+
+```text
+Gross Collection Total =
+    Cash Total
+  + UPI Total
+  + Card Total
+  + Credit Total
+```
+
+### Acceptance Criteria
+
+- All source entries remain accessible.
+- Totals update when source values change.
+- The summary clearly identifies incomplete collection categories.
+
+---
+
+## FR-088 — Save Collection Entry as Draft
+
+**Module ID:** PAY-013  
+**Priority:** High  
+**Primary Actor:** Employee
+
+### Business Requirement
+
+The system shall allow an employee to save incomplete collection entries and continue later.
+
+### Acceptance Criteria
+
+- Draft entries remain available after logout.
+- Draft entries are not treated as submitted.
+- The user can resume from the saved values.
+- Required validation is enforced before final submission.
+
+---
+
+## FR-089 — Validate Collection Completeness
+
+**Module ID:** PAY-014  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall validate that all required collection information has been completed before reconciliation submission.
+
+### Acceptance Criteria
+
+- Missing mandatory entries are clearly identified.
+- Invalid values prevent submission.
+- Zero collection values may be accepted only where permitted.
+- The validation result shall be available per employee.
+
+---
+
+# 9.14 Adjustment Management Module
+
+## FR-090 — Enter Expense
+
+**Module ID:** ADJ-001  
+**Priority:** Critical  
+**Primary Actor:** Employee
+
+### Business Requirement
+
+The system shall allow an employee to enter an expense incurred during the shift.
+
+### Expense Information
+
+- Expense Type
+- Amount
+- Description
+- Reference Number, where applicable
+- Supporting Remarks
+- Date and Time
+
+### Acceptance Criteria
+
+- Amount must be greater than zero.
+- Description is mandatory.
+- Expenses requiring approval shall be marked accordingly.
+- The expense shall be associated with the relevant employee and shift.
+
+---
+
+## FR-091 — Enter Positive Adjustment
+
+**Module ID:** ADJ-002  
+**Priority:** High  
+**Primary Actors:** Employee, Reviewer, Manager
+
+### Business Requirement
+
+The system shall allow an authorized user to record an approved amount that must be added to the accounted amount.
+
+### Acceptance Criteria
+
+- Adjustment Type is mandatory.
+- Amount must be greater than zero.
+- Description and business reason are mandatory.
+- Approval shall be required where configured.
+
+---
+
+## FR-092 — Enter Deductible Adjustment
+
+**Module ID:** ADJ-003  
+**Priority:** High  
+**Primary Actors:** Employee, Reviewer, Manager
+
+### Business Requirement
+
+The system shall allow an authorized user to record an amount that must be deducted from the accounted amount.
+
+### Possible Types
+
+- Expense
+- Fuel Testing
+- Calibration
+- Other Approved Deduction
+
+### Acceptance Criteria
+
+- Amount is stored as a positive value.
+- Adjustment direction determines the financial effect.
+- Reason and description are mandatory.
+- The adjustment remains traceable in audit history.
+
+---
+
+## FR-093 — Record Cash Deposit Adjustment
+
+**Module ID:** ADJ-004  
+**Priority:** High
+
+### Business Requirement
+
+The system shall allow an authorized user to record cash deposited or transferred during the shift.
+
+### Acceptance Criteria
+
+- Deposit Amount must be greater than zero.
+- Deposit Reference is mandatory where available.
+- The business effect of the deposit shall follow the configured adjustment rule.
+- Deposit details shall be available during review.
+
+---
+
+## FR-094 — Record Fuel Testing or Calibration
+
+**Module ID:** ADJ-005  
+**Priority:** High
+
+### Business Requirement
+
+The system shall allow authorized users to record fuel used for testing or calibration.
+
+### Information
+
+- Nozzle
+- Fuel Type
+- Quantity, where available
+- Amount
+- Description
+- Approval Reference
+
+### Acceptance Criteria
+
+- The entry shall identify the relevant nozzle or fuel type where applicable.
+- Quantity and amount shall use precise decimal values.
+- Approval requirements shall be applied.
+- The entry shall be included in reconciliation according to the approved business rule.
+
+---
+
+## FR-095 — Approve or Reject Adjustment
+
+**Module ID:** ADJ-006  
+**Priority:** Critical  
+**Primary Actors:** Reviewer, Approver
+
+### Business Requirement
+
+The system shall allow an authorized reviewer or approver to approve or reject adjustments requiring authorization.
+
+### Acceptance Criteria
+
+- Approval or rejection remarks are mandatory where configured.
+- The reviewing user and timestamp are recorded.
+- Rejected adjustments are excluded from final reconciliation.
+- Approved adjustments are included according to their direction.
+- The approval history remains available.
+
+---
+
+## FR-096 — Calculate Adjustment Summary
+
+**Module ID:** ADJ-007  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate adjustment totals for each employee and shift.
+
+### Calculation
+
+```text
+Net Adjustment =
+    Positive Adjustment Total
+  - Deductible Adjustment Total
+```
+
+### Acceptance Criteria
+
+- Only valid and approved adjustments are included in final reconciliation.
+- Pending adjustments are clearly identified.
+- Individual adjustment records remain accessible.
+
+---
+
+# 9.15 Reconciliation Module
+
+## FR-097 — Calculate Employee Expected Sales Amount
+
+**Module ID:** REC-001  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the expected fuel-sales amount for each employee.
+
+### Calculation
+
+```text
+Employee Expected Sales Amount =
+    Sum of Sales Amounts from Assigned Nozzles
+```
+
+### Acceptance Criteria
+
+- Shift nozzle-assignment snapshots are used.
+- Every assigned nozzle is included exactly once.
+- The total matches the employee fuel-sales summary.
+
+---
+
+## FR-098 — Calculate Employee Accounted Amount
+
+**Module ID:** REC-002  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the amount accounted for by each employee.
+
+### Calculation
+
+```text
+Employee Accounted Amount =
+    Cash Total
+  + UPI Total
+  + Card Total
+  + Credit Total
+  + Positive Adjustment Total
+  - Deductible Adjustment Total
+```
+
+### Acceptance Criteria
+
+- Only approved adjustments are included in the final value.
+- Source totals remain visible.
+- The calculation uses precise decimal arithmetic.
+
+---
+
+## FR-099 — Calculate Employee Reconciliation Difference
+
+**Module ID:** REC-003  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the reconciliation difference for each employee.
+
+### Calculation
+
+```text
+Difference =
+    Employee Accounted Amount
+  - Employee Expected Sales Amount
+```
+
+### Acceptance Criteria
+
+- A negative result represents a shortage.
+- A positive result represents an excess.
+- A zero or tolerated result represents a match.
+- The result is retained with the calculation date and version.
+
+---
+
+## FR-100 — Apply Reconciliation Tolerance
+
+**Module ID:** REC-004  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall apply a configurable reconciliation tolerance when determining reconciliation status.
+
+### Rules
+
+```text
+Absolute Difference <= Allowed Tolerance
+    → MATCHED
+```
+
+```text
+Difference < -Allowed Tolerance
+    → SHORTAGE
+```
+
+```text
+Difference > Allowed Tolerance
+    → EXCESS
+```
+
+### Acceptance Criteria
+
+- The tolerance value is configurable.
+- The effective tolerance used is stored with the reconciliation.
+- The client-approved tolerance value may be configured later without changing application code.
+- Only authorized users may modify tolerance configuration.
+
+---
+
+## FR-101 — Determine Employee Reconciliation Status
+
+**Module ID:** REC-005  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall determine the reconciliation status for each employee.
+
+### Supported Statuses
+
+- Matched
+- Shortage
+- Excess
+- Pending Review
+
+### Acceptance Criteria
+
+- Status is derived from calculated values.
+- Users cannot manually overwrite the calculated status.
+- Missing or unapproved information produces Pending Review.
+- Status changes after recalculation are audited.
+
+---
+
+## FR-102 — Calculate Shift Expected Sales Amount
+
+**Module ID:** REC-006  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the expected sales amount for the complete shift.
+
+### Calculation
+
+```text
+Shift Expected Sales Amount =
+    Sum of Employee Expected Sales Amounts
+```
+
+### Acceptance Criteria
+
+- All participating employees are included.
+- Shift total equals the sum of employee totals.
+- Missing employee calculations prevent finalization.
+
+---
+
+## FR-103 — Calculate Shift Accounted Amount
+
+**Module ID:** REC-007  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the accounted amount for the complete shift.
+
+### Calculation
+
+```text
+Shift Accounted Amount =
+    Sum of Employee Accounted Amounts
+```
+
+### Acceptance Criteria
+
+- The total equals the sum of employee reconciliation values.
+- All collection and adjustment categories are represented.
+- Incomplete employee reconciliation prevents finalization.
+
+---
+
+## FR-104 — Calculate Shift Reconciliation Difference
+
+**Module ID:** REC-008  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the reconciliation difference for the complete shift.
+
+### Calculation
+
+```text
+Shift Difference =
+    Shift Accounted Amount
+  - Shift Expected Sales Amount
+```
+
+### Acceptance Criteria
+
+- The same configured tolerance rules are applied.
+- Employee-level and shift-level results remain visible.
+- The result is retained for approval and reporting.
+
+---
+
+## FR-105 — Display Employee Reconciliation Summary
+
+**Module ID:** REC-009  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall display a complete employee reconciliation summary.
+
+### Displayed Information
+
+- Employee
+- Assigned Nozzles
+- Quantity Sold by Fuel Type
+- Expected Sales Amount
+- Cash Total
+- UPI Total
+- Card Total
+- Credit Total
+- Positive Adjustments
+- Deductible Adjustments
+- Accounted Amount
+- Difference
+- Tolerance
+- Reconciliation Status
+
+### Acceptance Criteria
+
+- All values can be traced to their source entries.
+- Shortage and excess results are clearly highlighted.
+- The summary is available before submission.
+
+---
+
+## FR-106 — Display Shift Reconciliation Summary
+
+**Module ID:** REC-010  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall display the complete shift-level reconciliation.
+
+### Displayed Information
+
+- Station
+- DU Serial Number
+- Business Date
+- Shift Number
+- Employees
+- Fuel Quantity by Fuel Type
+- Expected Sales Amount
+- Collection Totals
+- Adjustment Totals
+- Accounted Amount
+- Difference
+- Tolerance
+- Overall Status
+
+### Acceptance Criteria
+
+- Employee totals reconcile to shift totals.
+- Inconsistent values are clearly identified.
+- The summary is available to employees, reviewers and approvers according to role.
+
+---
+
+## FR-107 — Recalculate Reconciliation
+
+**Module ID:** REC-011  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall recalculate reconciliation whenever an authorized change affects fuel sales, collections or adjustments.
+
+### Acceptance Criteria
+
+- Previous approved values shall not be silently overwritten.
+- Recalculation creates a new traceable result or version.
+- Submission status is reset where required.
+- The reason and initiating user are recorded.
+
+---
+
+## FR-108 — Submit Reconciliation for Review
+
+**Module ID:** REC-012  
+**Priority:** Critical  
+**Primary Actor:** Employee
+
+### Business Requirement
+
+The system shall allow an employee to submit a completed reconciliation for Level-1 review.
+
+### Preconditions
+
+- Receipt readings are confirmed.
+- Fuel-sales calculation is complete.
+- Collection entries are complete.
+- Required adjustments are resolved.
+- Reconciliation has been calculated.
+
+### Acceptance Criteria
+
+- Incomplete reconciliation cannot be submitted.
+- The employee can review the final summary before submission.
+- Submission date, time and user are recorded.
+- Submitted data becomes protected from ordinary editing.
+- The workflow moves to Level-1 Review.
