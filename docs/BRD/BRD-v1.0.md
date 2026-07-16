@@ -1362,3 +1362,745 @@ The system shall close a shift after all required approvals are completed.
 - Closed shifts become read-only during normal operation.
 - Reopening requires an authorized correction process.
 - Closure date, time and user shall be recorded.
+
+---
+
+# 9.10 Receipt Management Module
+
+## FR-045 — Upload Start Reading Receipt
+
+**Module ID:** RCPT-001  
+**Priority:** Critical  
+**Primary Actor:** Employee
+
+### Business Requirement
+
+The system shall allow an employee to upload the Start Reading Receipt for an open shift.
+
+### Supported User Actions
+
+The user shall be able to:
+
+- Capture a new receipt image using a supported device camera.
+- Select an existing receipt image from the device.
+- Preview the selected image.
+- Replace the image before submission.
+- Submit the image for processing.
+
+### Preconditions
+
+- The user is authenticated.
+- The shift is open.
+- A Start Reading Receipt has not already been confirmed for the shift.
+
+### Postconditions
+
+- The receipt image is stored.
+- Receipt metadata is recorded.
+- Receipt processing is initiated.
+- The shift status is updated.
+
+### Acceptance Criteria
+
+- The user can upload a supported image.
+- The selected image is displayed for preview.
+- The user can replace an incorrect or poor-quality image.
+- Duplicate submission is prevented.
+- Successful upload displays a confirmation message.
+- Failed upload displays a clear error message.
+
+---
+
+## FR-046 — Upload End Reading Receipt
+
+**Module ID:** RCPT-002  
+**Priority:** Critical  
+**Primary Actor:** Employee
+
+### Business Requirement
+
+The system shall allow an employee to upload the End Reading Receipt for an open shift.
+
+### Preconditions
+
+- The user is authenticated.
+- The shift is active.
+- A Start Reading Receipt exists.
+- An End Reading Receipt has not already been confirmed.
+
+### Postconditions
+
+- The End Reading Receipt is stored.
+- Receipt processing is initiated.
+- The shift status is updated.
+
+### Acceptance Criteria
+
+- The receipt belongs to the selected shift.
+- The user can preview and replace the image before submission.
+- Duplicate End Reading Receipt submission is prevented.
+- A confirmation message is displayed after successful upload.
+
+---
+
+## FR-047 — Validate Receipt File
+
+**Module ID:** RCPT-003  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall validate an uploaded receipt image before processing.
+
+### Validation Rules
+
+The system shall validate:
+
+- File is present.
+- File is not empty.
+- File type is supported.
+- File size is within the configured limit.
+- Image can be opened successfully.
+- Image dimensions meet the minimum requirement.
+- File does not duplicate an existing receipt image.
+
+### Initial Supported File Types
+
+- JPEG
+- JPG
+- PNG
+
+### Acceptance Criteria
+
+- Invalid files are rejected.
+- The user receives a clear reason for rejection.
+- Validation limits are configurable.
+- Failed files are not processed by OCR.
+
+---
+
+## FR-048 — Store Receipt Metadata
+
+**Module ID:** RCPT-004  
+**Priority:** High
+
+### Business Requirement
+
+The system shall record metadata for every uploaded receipt.
+
+### Receipt Metadata
+
+- Receipt Type
+- Shift
+- Original Filename
+- Stored Filename
+- File Type
+- File Size
+- Image Dimensions
+- File Hash
+- Upload Date and Time
+- Uploaded By
+- Processing Status
+
+### Acceptance Criteria
+
+- Metadata is retained for audit.
+- Original filenames are preserved for reference.
+- Physical storage filenames are generated securely.
+- File hashes support duplicate detection.
+
+---
+
+## FR-049 — Prevent Duplicate Receipt Upload
+
+**Module ID:** RCPT-005  
+**Priority:** High
+
+### Business Requirement
+
+The system shall detect and prevent accidental duplicate receipt uploads.
+
+### Acceptance Criteria
+
+- Duplicate files are detected using file hash or equivalent validation.
+- The user is informed that the receipt has already been uploaded.
+- Authorized users may review a suspected duplicate.
+- Duplicate attempts are recorded where required.
+
+---
+
+## FR-050 — Replace Unconfirmed Receipt
+
+**Module ID:** RCPT-006  
+**Priority:** High  
+**Primary Actor:** Employee
+
+### Business Requirement
+
+The system shall allow an employee to replace an uploaded receipt before the receipt values are confirmed.
+
+### Acceptance Criteria
+
+- Only unconfirmed receipts can be replaced through the normal workflow.
+- The replacement reason may be recorded.
+- Previous upload metadata remains available for audit where required.
+- OCR processing restarts for the replacement image.
+
+---
+
+## FR-051 — View Receipt Image
+
+**Module ID:** RCPT-007  
+**Priority:** High
+
+### Business Requirement
+
+The system shall allow authorized users to view uploaded receipt images.
+
+### Acceptance Criteria
+
+- The receipt image can be viewed from the shift screen.
+- The user can zoom the image.
+- The image is associated with the correct receipt type.
+- Access is restricted by role and station permission.
+
+---
+
+# 9.11 OCR Processing Module
+
+## FR-052 — Initiate OCR Processing
+
+**Module ID:** OCR-001  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall automatically initiate receipt processing after a valid image is uploaded.
+
+### Postconditions
+
+- Processing status is updated.
+- OCR processing begins.
+- Processing progress or status is visible to the user.
+
+### Acceptance Criteria
+
+- OCR starts without requiring duplicate user action.
+- The user can view whether processing is pending, successful or failed.
+- Long-running processing does not freeze the user interface.
+
+---
+
+## FR-053 — Improve Receipt Image Quality
+
+**Module ID:** OCR-002  
+**Priority:** High
+
+### Business Requirement
+
+The system shall improve receipt image quality before attempting data extraction.
+
+### Processing May Include
+
+- Image resizing
+- Grayscale conversion
+- Contrast improvement
+- Noise removal
+- Thresholding
+- Rotation correction
+- Deskewing
+- Perspective correction
+- Region-based extraction
+
+### Acceptance Criteria
+
+- Processing improves readability where possible.
+- The original image remains unchanged.
+- Processed images may be retained for troubleshooting according to policy.
+
+---
+
+## FR-054 — Extract DU Serial Number
+
+**Module ID:** OCR-003  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall extract the DU Serial Number from the uploaded receipt.
+
+### Acceptance Criteria
+
+- The extracted value is normalized before comparison.
+- The original extracted text is retained.
+- Missing or low-confidence values require review.
+- Start and End Receipt DU Serial Numbers are compared.
+
+---
+
+## FR-055 — Extract Receipt Date and Time
+
+**Module ID:** OCR-004  
+**Priority:** High
+
+### Business Requirement
+
+The system shall extract the printed receipt date and time where available.
+
+### Acceptance Criteria
+
+- Valid date and time values are displayed for confirmation.
+- Invalid or missing values are flagged.
+- Start Receipt time should precede End Receipt time unless an authorized exception applies.
+
+---
+
+## FR-056 — Extract Nozzle Number
+
+**Module ID:** OCR-005  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall identify each nozzle number printed on the receipt.
+
+### Acceptance Criteria
+
+- Nozzle numbers are matched to configured nozzles.
+- Duplicate nozzle numbers within one receipt are flagged.
+- Missing required nozzles trigger review.
+- Unconfigured nozzle numbers are highlighted.
+
+---
+
+## FR-057 — Extract ATOT Reading
+
+**Module ID:** OCR-006  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall extract the accumulated amount total, referred to as ATOT, for each nozzle.
+
+### Acceptance Criteria
+
+- ATOT is interpreted as a precise decimal value.
+- Original OCR text is retained.
+- Invalid or uncertain values require review.
+- Negative ATOT values are rejected.
+
+---
+
+## FR-058 — Extract VTOT Reading
+
+**Module ID:** OCR-007  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall extract the accumulated volume total, referred to as VTOT, for each nozzle.
+
+### Acceptance Criteria
+
+- VTOT is interpreted as a precise decimal value.
+- Original OCR text is retained.
+- Invalid or uncertain values require review.
+- Negative VTOT values are rejected.
+
+---
+
+## FR-059 — Extract ECAL Factor
+
+**Module ID:** OCR-008  
+**Priority:** Medium
+
+### Business Requirement
+
+The system shall extract the ECAL factor where it is printed and required for operational validation.
+
+### Acceptance Criteria
+
+- ECAL is stored against the correct nozzle.
+- Missing ECAL does not prevent processing unless configured as mandatory.
+- Uncertain ECAL values are flagged for review.
+
+---
+
+## FR-060 — Record OCR Confidence
+
+**Module ID:** OCR-009  
+**Priority:** High
+
+### Business Requirement
+
+The system shall record confidence information for extracted receipt data.
+
+### Acceptance Criteria
+
+- Confidence is available for relevant extracted fields.
+- The system uses a configurable confidence threshold.
+- Fields below the threshold are marked for manual review.
+- Users are not required to understand technical OCR scoring details.
+
+---
+
+## FR-061 — Handle OCR Processing Failure
+
+**Module ID:** OCR-010  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall handle receipt-processing failures without losing the uploaded receipt.
+
+### Acceptance Criteria
+
+- The receipt remains available.
+- The failure reason is recorded.
+- The user receives a clear message.
+- Authorized users can retry processing.
+- Technical failure details are logged for support.
+
+---
+
+## FR-062 — Retry OCR Processing
+
+**Module ID:** OCR-011  
+**Priority:** High  
+**Primary Actors:** Employee, Reviewer, Administrator
+
+### Business Requirement
+
+The system shall allow authorized users to retry processing for a failed or low-quality receipt.
+
+### Acceptance Criteria
+
+- A retry does not create a duplicate business receipt.
+- Multiple processing attempts may be retained for audit.
+- The latest successful result is clearly identified.
+- Previous results remain available where required.
+
+---
+
+## FR-063 — Display Extracted Receipt Data
+
+**Module ID:** OCR-012  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall display extracted receipt values for user review.
+
+### Displayed Information
+
+- Receipt Type
+- DU Serial Number
+- Receipt Date and Time
+- Nozzle Number
+- ATOT
+- VTOT
+- ECAL, where available
+- Warning or review status
+
+### Acceptance Criteria
+
+- Extracted values are displayed beside or near the receipt image.
+- Values are grouped by nozzle.
+- Uncertain or missing fields are clearly highlighted.
+
+---
+
+## FR-064 — Correct Extracted Receipt Data
+
+**Module ID:** OCR-013  
+**Priority:** Critical  
+**Primary Actors:** Employee where permitted, Reviewer, Supervisor
+
+### Business Requirement
+
+The system shall allow authorized users to correct an extracted receipt value before confirmation.
+
+### Required Correction Information
+
+- Original Value
+- Corrected Value
+- Correction Reason
+- Corrected By
+- Correction Date and Time
+
+### Acceptance Criteria
+
+- The original OCR value is preserved.
+- Correction reason is mandatory.
+- Only authorized roles can make corrections.
+- Every correction is recorded in the audit history.
+- Corrected numeric values are validated.
+
+---
+
+## FR-065 — Confirm Receipt Readings
+
+**Module ID:** OCR-014  
+**Priority:** Critical  
+**Primary Actors:** Employee, Reviewer
+
+### Business Requirement
+
+The system shall allow an authorized user to confirm that receipt readings are correct.
+
+### Preconditions
+
+- Required fields are available.
+- Validation errors are resolved.
+- Any required corrections are completed.
+
+### Postconditions
+
+- Receipt status becomes Confirmed.
+- Receipt readings become available for sales calculation.
+- The confirming user and time are recorded.
+
+### Acceptance Criteria
+
+- Unresolved critical errors prevent confirmation.
+- Confirmed values are protected from ordinary editing.
+- Changes after confirmation require an authorized correction process.
+
+---
+
+## FR-066 — Validate Start and End Receipt Pair
+
+**Module ID:** OCR-015  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall validate the Start and End Receipts as a valid pair before fuel-sales calculation.
+
+### Validation Rules
+
+- Both receipts belong to the same shift.
+- Both receipts have the same normalized DU Serial Number.
+- Required nozzle numbers are present.
+- Start and End readings correspond to the same configured nozzles.
+- End Receipt date and time is later than Start Receipt date and time, subject to authorized exceptions.
+
+### Acceptance Criteria
+
+- Valid pairs proceed to sales calculation.
+- Invalid pairs are marked for review.
+- Automatic reconciliation is prevented until critical differences are resolved.
+
+---
+
+# 9.12 Fuel Sales Calculation Module
+
+## FR-067 — Calculate Nozzle-Wise Fuel Quantity
+
+**Module ID:** SALES-001  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the quantity of fuel sold through each nozzle.
+
+### Calculation
+
+```text
+Quantity Sold =
+    End VTOT
+  - Start VTOT
+```
+
+### Acceptance Criteria
+
+- Calculation uses confirmed readings.
+- Calculation uses precise decimal arithmetic.
+- End VTOT lower than Start VTOT is rejected.
+- Results are retained per nozzle, fuel type and employee.
+
+---
+
+## FR-068 — Calculate Receipt Amount Difference
+
+**Module ID:** SALES-002  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the dispenser-recorded sales amount for each nozzle.
+
+### Calculation
+
+```text
+Receipt Amount Difference =
+    End ATOT
+  - Start ATOT
+```
+
+### Acceptance Criteria
+
+- End ATOT lower than Start ATOT is rejected.
+- The result is retained for audit.
+- Calculation uses precise decimal arithmetic.
+
+---
+
+## FR-069 — Calculate Price-Based Sales Amount
+
+**Module ID:** SALES-003  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the expected sales amount using quantity sold and the applicable fuel price.
+
+### Calculation
+
+```text
+Calculated Sales Amount =
+    Quantity Sold
+  × Effective Price Per Litre
+```
+
+### Acceptance Criteria
+
+- The effective fuel price is selected automatically.
+- Missing price configuration prevents final calculation.
+- The price used is retained with the calculation.
+- Configured rounding rules are applied consistently.
+
+---
+
+## FR-070 — Calculate Nozzle Amount Variance
+
+**Module ID:** SALES-004  
+**Priority:** High
+
+### Business Requirement
+
+The system shall compare the Receipt Amount Difference with the Price-Based Sales Amount.
+
+### Calculation
+
+```text
+Amount Variance =
+    Receipt Amount Difference
+  - Calculated Sales Amount
+```
+
+### Acceptance Criteria
+
+- The variance is calculated per nozzle.
+- Variance beyond the configured limit is flagged.
+- The user can view both source amounts and the difference.
+
+---
+
+## FR-071 — Allocate Nozzle Sales to Employee
+
+**Module ID:** SALES-005  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall allocate nozzle-wise fuel sales to the employee assigned to that nozzle for the shift.
+
+### Acceptance Criteria
+
+- Allocation uses the shift assignment snapshot.
+- Sales are not allocated using later master-data changes.
+- Every nozzle sale belongs to exactly one participating employee.
+- Missing employee assignment prevents final reconciliation.
+
+---
+
+## FR-072 — Calculate Employee Fuel Sales Summary
+
+**Module ID:** SALES-006  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate an employee-wise fuel-sales summary.
+
+### Summary Information
+
+- Assigned Nozzles
+- Fuel Quantity by Fuel Type
+- Sales Amount by Fuel Type
+- Total Quantity Sold
+- Total Expected Sales Amount
+
+### Acceptance Criteria
+
+- Petrol and Diesel are displayed separately.
+- Additional fuel types can be displayed when configured.
+- Employee totals equal the sum of assigned nozzle sales.
+
+---
+
+## FR-073 — Calculate Shift Fuel Sales Summary
+
+**Module ID:** SALES-007  
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the total fuel sales for the shift.
+
+### Acceptance Criteria
+
+- Shift totals equal the sum of employee totals.
+- Quantities are grouped by fuel type.
+- Expected sales amount is available for reconciliation.
+- Incomplete nozzle calculations prevent finalization.
+
+---
+
+## FR-074 — Recalculate Fuel Sales
+
+**Module ID:** SALES-008  
+**Priority:** High  
+**Primary Actors:** Reviewer, Supervisor
+
+### Business Requirement
+
+The system shall recalculate fuel sales when an authorized receipt correction or fuel-price correction affects the result.
+
+### Acceptance Criteria
+
+- Previous calculations remain traceable where required.
+- Recalculation records user, date and reason.
+- Payment and reconciliation results are marked for recalculation.
+- Approved shifts cannot be silently recalculated.
+
+---
+
+## FR-075 — Display Fuel Sales Calculation Details
+
+**Module ID:** SALES-009  
+**Priority:** High
+
+### Business Requirement
+
+The system shall display the values used in fuel-sales calculations.
+
+### Displayed Information
+
+- Start ATOT
+- End ATOT
+- Receipt Amount Difference
+- Start VTOT
+- End VTOT
+- Quantity Sold
+- Fuel Price
+- Calculated Sales Amount
+- Amount Variance
+- Assigned Employee
+
+### Acceptance Criteria
+
+- Users can review calculations before payment entry.
+- Values are shown nozzle-wise and employee-wise.
+- Flagged variances are clearly identified.
