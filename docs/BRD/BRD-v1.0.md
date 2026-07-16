@@ -4314,3 +4314,1170 @@ Approved and closed shifts shall be read-only during normal operation.
 - Ordinary users cannot modify approved results.
 - Authorized corrections follow a controlled process.
 - The original approved information remains traceable.
+
+---
+
+# 17. Business Process Workflows
+
+## 17.1 Shift Reconciliation Workflow
+
+The complete shift-reconciliation process shall follow this sequence:
+
+```text
+Employee Login
+      |
+      v
+Open Shift
+      |
+      v
+Upload Start Reading Receipt
+      |
+      v
+Receipt Processing and Review
+      |
+      v
+Fuel Dispensing Operations
+      |
+      v
+Upload End Reading Receipt
+      |
+      v
+Receipt Processing and Review
+      |
+      v
+Confirm Start and End Readings
+      |
+      v
+Calculate Nozzle-Wise Fuel Sales
+      |
+      v
+Allocate Sales to Employees
+      |
+      v
+Enter Cash Denominations
+      |
+      v
+Enter UPI Terminal Collections
+      |
+      v
+Enter Card Collections
+      |
+      v
+Enter Credit Sales
+      |
+      v
+Enter Expenses and Adjustments
+      |
+      v
+Calculate Employee Reconciliation
+      |
+      v
+Calculate Shift Reconciliation
+      |
+      v
+Submit for Level-1 Review
+      |
+      v
+Level-1 Review
+      |
+      v
+Level-2 Approval
+      |
+      v
+Close Shift
+```
+
+---
+
+## 17.2 Start Receipt Workflow
+
+```text
+Employee Selects Open Shift
+      |
+      v
+Selects Start Receipt Upload
+      |
+      v
+Captures Photo or Selects Image
+      |
+      v
+Previews Image
+      |
+      v
+Replaces Image if Required
+      |
+      v
+Submits Image
+      |
+      v
+File Validation
+      |
+      +---- Invalid ----> Display Reason and Request Replacement
+      |
+      v
+Receipt Processing
+      |
+      +---- Failed -----> Retry or Manual Review
+      |
+      v
+Display Extracted Values
+      |
+      v
+Employee or Reviewer Confirms Values
+      |
+      v
+Start Receipt Confirmed
+```
+
+---
+
+## 17.3 End Receipt Workflow
+
+The End Receipt workflow shall follow the same upload and review process as the Start Receipt.
+
+Additional validation shall ensure:
+
+- Start Receipt already exists.
+- End Receipt belongs to the same shift.
+- DU Serial Number matches the Start Receipt.
+- End Receipt time follows the Start Receipt time, subject to approved exceptions.
+- Required nozzle readings are present.
+- End ATOT is not lower than Start ATOT.
+- End VTOT is not lower than Start VTOT.
+
+---
+
+## 17.4 Receipt Review Workflow
+
+```text
+Display Receipt Image
+      |
+      v
+Display Extracted Fields
+      |
+      v
+Check Missing or Low-Confidence Values
+      |
+      +---- No Issues ----> Confirm Readings
+      |
+      v
+User Reviews Highlighted Field
+      |
+      v
+Enter Corrected Value
+      |
+      v
+Enter Correction Reason
+      |
+      v
+Save Correction and Audit History
+      |
+      v
+Confirm Readings
+```
+
+---
+
+## 17.5 Collection Entry Workflow
+
+```text
+Select Employee
+      |
+      v
+Enter Cash Denomination Counts
+      |
+      v
+System Calculates Cash Total
+      |
+      v
+Enter UPI TID and Total Amount
+      |
+      v
+Enter Card Collection Details
+      |
+      v
+Enter Credit Sales
+      |
+      v
+Enter Expenses and Adjustments
+      |
+      v
+Review Collection Summary
+      |
+      v
+Save Draft or Complete Entry
+```
+
+---
+
+## 17.6 Reconciliation Workflow
+
+```text
+Confirmed Fuel Sales
+      |
+      v
+Completed Collection Entry
+      |
+      v
+Approved Adjustments
+      |
+      v
+Calculate Expected Sales Amount
+      |
+      v
+Calculate Accounted Amount
+      |
+      v
+Calculate Difference
+      |
+      v
+Apply Configured Tolerance
+      |
+      +---- Within Tolerance ----> MATCHED
+      |
+      +---- Negative Difference -> SHORTAGE
+      |
+      +---- Positive Difference -> EXCESS
+      |
+      v
+Display Employee and Shift Summary
+      |
+      v
+Employee Submits for Review
+```
+
+---
+
+## 17.7 Level-1 Review Workflow
+
+### Scenario A — Reconciliation Matched
+
+```text
+Employee Submits
+      |
+      v
+Level-1 Reviewer Reviews
+      |
+      v
+Reviewer Approves
+      |
+      v
+Forward to Level-2 Approver
+```
+
+### Scenario B — Initial Shortage
+
+```text
+Employee Submits Shortage
+      |
+      v
+Level-1 Reviewer Reviews
+      |
+      v
+Reviewer Rejects with Remarks
+      |
+      v
+Returned to Employee
+      |
+      v
+Employee Corrects and Resubmits
+```
+
+### Scenario C — Shortage Still Exists After Resubmission
+
+```text
+Employee Resubmits
+      |
+      v
+Level-1 Reviewer Reviews
+      |
+      v
+Reviewer Approves with Mandatory Remarks
+      |
+      v
+Forward to Level-2 Approver
+```
+
+### Scenario D — Initial Excess
+
+```text
+Employee Submits Excess
+      |
+      v
+Level-1 Reviewer Reviews
+      |
+      v
+Reviewer Rejects with Remarks
+      |
+      v
+Returned to Employee
+      |
+      v
+Employee Corrects and Resubmits
+```
+
+### Scenario E — Excess Still Exists After Resubmission
+
+```text
+Employee Resubmits
+      |
+      v
+Level-1 Reviewer Reviews
+      |
+      v
+Reviewer Approves with Mandatory Remarks
+      |
+      v
+Forward to Level-2 Approver
+```
+
+---
+
+## 17.8 Level-2 Approval Workflow
+
+### Matched Reconciliation
+
+```text
+Level-2 Approver Reviews
+      |
+      v
+Approve
+      |
+      v
+Shift Eligible for Closure
+```
+
+### Shortage or Excess Reconciliation
+
+```text
+Level-2 Approver Reviews
+      |
+      +---- Approve with Mandatory Remarks
+      |           |
+      |           v
+      |     Shift Eligible for Closure
+      |
+      +---- Reject with Mandatory Remarks
+                  |
+                  v
+           Return to Employee
+                  |
+                  v
+          Correction and Resubmission
+```
+
+---
+
+## 17.9 Shift Closure Workflow
+
+```text
+Level-2 Approval Completed
+      |
+      v
+System Validates Final Status
+      |
+      v
+Shift Marked Approved
+      |
+      v
+Shift Closed
+      |
+      v
+Records Become Read-Only
+      |
+      v
+Reports Available
+```
+
+---
+
+# 18. Screen Specifications
+
+## 18.1 Screen Catalogue
+
+| Screen ID | Screen Name | Primary Users |
+|---|---|---|
+| SCR-001 | Login | All Users |
+| SCR-002 | Employee Dashboard | Employee |
+| SCR-003 | Reviewer Dashboard | Reviewer |
+| SCR-004 | Approver Dashboard | Approver |
+| SCR-005 | Administration Dashboard | Administrator |
+| SCR-006 | Organization Management | Administrator |
+| SCR-007 | Fuel Station Management | Administrator |
+| SCR-008 | Dispenser Unit Management | Administrator |
+| SCR-009 | Nozzle Management | Administrator |
+| SCR-010 | Employee Management | Administrator |
+| SCR-011 | Nozzle Assignment | Administrator |
+| SCR-012 | Fuel Type Management | Administrator |
+| SCR-013 | Fuel Price Management | Administrator, Manager |
+| SCR-014 | Open Shift | Employee |
+| SCR-015 | Shift Details | Employee, Reviewer, Approver |
+| SCR-016 | Start Receipt Upload | Employee |
+| SCR-017 | End Receipt Upload | Employee |
+| SCR-018 | Receipt Review | Employee, Reviewer |
+| SCR-019 | Fuel Sales Calculation | Employee, Reviewer |
+| SCR-020 | Cash Denomination Entry | Employee |
+| SCR-021 | UPI Terminal Entry | Employee |
+| SCR-022 | Card Collection Entry | Employee |
+| SCR-023 | Credit Sale Entry | Employee |
+| SCR-024 | Expense and Adjustment Entry | Employee, Reviewer |
+| SCR-025 | Employee Reconciliation | Employee, Reviewer |
+| SCR-026 | Shift Reconciliation | Employee, Reviewer, Approver |
+| SCR-027 | Level-1 Review | Reviewer |
+| SCR-028 | Level-2 Approval | Approver |
+| SCR-029 | Approval History | Reviewer, Approver, Auditor |
+| SCR-030 | Reports | Manager, Auditor, Administrator |
+| SCR-031 | Audit History | Auditor, Administrator |
+| SCR-032 | Application Configuration | Administrator |
+| SCR-033 | User and Role Management | Administrator |
+
+---
+
+## 18.2 SCR-001 — Login
+
+### Purpose
+
+Allow an authorized user to access the application.
+
+### Main Fields
+
+- Username
+- Password
+
+### Main Actions
+
+- Login
+- Reset Password, where enabled
+
+### Business Validation
+
+- Username and password are mandatory.
+- Locked or inactive accounts cannot log in.
+- Successful login redirects the user to the correct role-based dashboard.
+
+---
+
+## 18.3 SCR-002 — Employee Dashboard
+
+### Purpose
+
+Provide the employee with a summary of assigned and recent work.
+
+### Information
+
+- Open Shifts
+- Pending Start Receipt
+- Pending End Receipt
+- Receipt Review Required
+- Pending Collection Entry
+- Pending Reconciliation
+- Returned for Correction
+- Submitted Reconciliations
+- Approved Shifts
+
+### Main Actions
+
+- Open Shift
+- Continue Shift
+- View Reviewer Remarks
+- View Reconciliation
+
+---
+
+## 18.4 SCR-003 — Reviewer Dashboard
+
+### Purpose
+
+Display reconciliations awaiting Level-1 review.
+
+### Information
+
+- Newly Submitted Reconciliations
+- Resubmitted Reconciliations
+- Matched Cases
+- Shortage Cases
+- Excess Cases
+- Pending Adjustment Approvals
+- Receipt Review Cases
+
+### Main Actions
+
+- Review
+- Approve
+- Approve with Remarks
+- Return to Employee
+- View History
+
+---
+
+## 18.5 SCR-004 — Approver Dashboard
+
+### Purpose
+
+Display reconciliations awaiting Level-2 approval.
+
+### Information
+
+- Matched Reconciliations
+- Shortage Reconciliations
+- Excess Reconciliations
+- Level-1 Reviewer Remarks
+- Resubmission History
+
+### Main Actions
+
+- Approve
+- Approve with Remarks
+- Reject and Return
+- View Audit History
+
+---
+
+## 18.6 SCR-014 — Open Shift
+
+### Purpose
+
+Allow an employee to open a new operational shift.
+
+### Main Fields
+
+- Station
+- Dispenser Unit
+- DU Serial Number
+- Business Date
+- Shift Number
+- Start Time
+- Participating Employees
+- Assigned Nozzles
+
+### Business Validation
+
+- Station and DU must be active.
+- Required nozzle assignments must exist.
+- Required fuel prices must exist.
+- Duplicate shift numbers shall be prevented.
+
+---
+
+## 18.7 SCR-016 and SCR-017 — Receipt Upload
+
+### Purpose
+
+Allow the employee to upload Start or End Reading Receipts.
+
+### Main Components
+
+- Capture Photo
+- Select Existing Image
+- Receipt Preview
+- Replace Image
+- Upload Button
+- Upload Status
+- Validation Message
+
+### Business Validation
+
+- File type is supported.
+- File size is within limit.
+- Image is readable.
+- Duplicate receipt is not accepted.
+- Correct shift and receipt type are used.
+
+---
+
+## 18.8 SCR-018 — Receipt Review
+
+### Purpose
+
+Allow authorized users to review and confirm extracted receipt readings.
+
+### Layout
+
+The screen should display:
+
+- Receipt image
+- Extracted DU Serial Number
+- Receipt Date and Time
+- Nozzle Number
+- ATOT
+- VTOT
+- ECAL
+- Warning indicators
+- Correction fields
+- Correction reason
+- Confirm button
+
+### Main Actions
+
+- Zoom Receipt
+- Retry Processing
+- Correct Value
+- Save Correction
+- Confirm Readings
+
+---
+
+## 18.9 SCR-019 — Fuel Sales Calculation
+
+### Purpose
+
+Display nozzle-wise and employee-wise sales calculations.
+
+### Displayed Values
+
+- Nozzle
+- Employee
+- Fuel Type
+- Start ATOT
+- End ATOT
+- Amount Difference
+- Start VTOT
+- End VTOT
+- Quantity Sold
+- Fuel Price
+- Calculated Sales Amount
+- Variance
+
+---
+
+## 18.10 SCR-020 — Cash Denomination Entry
+
+### Purpose
+
+Allow an employee to enter physical cash held.
+
+### Initial Denominations
+
+- ₹500
+- ₹200
+- ₹100
+- ₹50
+- ₹20
+- ₹10
+- ₹5
+- ₹2
+- ₹1
+
+### Columns
+
+- Denomination
+- Quantity
+- Calculated Amount
+
+### Summary
+
+- Total Number of Notes and Coins
+- Cash Total
+
+---
+
+## 18.11 SCR-021 — UPI Terminal Entry
+
+### Purpose
+
+Allow an employee to enter UPI collections by terminal.
+
+### Main Fields
+
+- UPI Provider or Machine Name
+- Terminal ID (TID)
+- Total Amount Received
+- Remarks
+
+### Main Actions
+
+- Add Terminal
+- Edit Entry
+- Remove Draft Entry
+- Save
+
+### Summary
+
+- Number of TIDs Entered
+- Total UPI Amount
+
+---
+
+## 18.12 SCR-022 — Card Collection Entry
+
+### Main Fields
+
+- Terminal ID or Machine Reference
+- Card Amount
+- Settlement or Batch Reference
+- Remarks
+
+### Summary
+
+- Total Card Amount
+
+---
+
+## 18.13 SCR-023 — Credit Sale Entry
+
+### Main Fields
+
+- Customer Name
+- Customer or Account Reference
+- Vehicle Number
+- Credit Amount
+- Remarks
+
+### Summary
+
+- Total Credit Amount
+
+---
+
+## 18.14 SCR-024 — Expense and Adjustment Entry
+
+### Main Fields
+
+- Adjustment Type
+- Adjustment Direction
+- Amount
+- Description
+- Reference Number
+- Date and Time
+- Approval Status
+- Approval Remarks
+
+### Main Actions
+
+- Add
+- Edit Draft
+- Submit for Approval
+- Approve
+- Reject
+
+---
+
+## 18.15 SCR-025 — Employee Reconciliation
+
+### Displayed Information
+
+- Employee
+- Assigned Nozzles
+- Fuel Quantity by Fuel Type
+- Expected Sales Amount
+- Cash Total
+- UPI Total
+- Card Total
+- Credit Total
+- Positive Adjustments
+- Deductible Adjustments
+- Accounted Amount
+- Difference
+- Tolerance
+- Status
+
+### Main Actions
+
+- Recalculate
+- Save Draft
+- Submit for Review
+
+---
+
+## 18.16 SCR-026 — Shift Reconciliation
+
+### Displayed Information
+
+- Station
+- DU Serial Number
+- Business Date
+- Shift Number
+- Employee Summaries
+- Fuel Totals
+- Expected Sales Total
+- Collection Total
+- Adjustment Total
+- Accounted Amount
+- Difference
+- Tolerance
+- Overall Status
+
+---
+
+## 18.17 SCR-027 — Level-1 Review
+
+### Main Review Areas
+
+- Receipt Images
+- Confirmed Readings
+- Manual Corrections
+- Fuel Sales
+- Collections
+- Adjustments
+- Employee Reconciliation
+- Shift Reconciliation
+- Previous Remarks
+
+### Available Actions
+
+- Approve
+- Approve with Remarks
+- Return to Employee
+
+### Validation
+
+- Remarks are mandatory for shortage or excess approval.
+- Return reason is mandatory when returning to employee.
+
+---
+
+## 18.18 SCR-028 — Level-2 Approval
+
+### Main Review Areas
+
+- Reconciliation Summary
+- Level-1 Decision
+- Reviewer Remarks
+- Employee Resubmission History
+- Audit Events
+- Shortage or Excess Explanation
+
+### Available Actions
+
+- Approve
+- Approve with Remarks
+- Reject and Return to Employee
+
+---
+
+## 18.19 SCR-029 — Approval History
+
+### Displayed Information
+
+- Level
+- User
+- Action
+- Previous Status
+- New Status
+- Remarks
+- Date and Time
+- Resubmission Number
+
+---
+
+## 18.20 SCR-032 — Application Configuration
+
+### Configurable Items
+
+- Reconciliation Tolerance
+- Receipt Upload Size
+- Supported Image Formats
+- OCR Confidence Threshold
+- Session Timeout
+- Data Retention Period
+- Cash Denominations
+- Other approved operational settings
+
+---
+
+# 19. Report Specifications
+
+## 19.1 Report Catalogue
+
+| Report ID | Report Name |
+|---|---|
+| RPT-001 | Employee Shift Reconciliation Report |
+| RPT-002 | Shift Reconciliation Report |
+| RPT-003 | Station Daily Sales Summary |
+| RPT-004 | Fuel-Type Sales Summary |
+| RPT-005 | Shortage and Excess Report |
+| RPT-006 | Cash Denomination Summary |
+| RPT-007 | UPI Terminal Collection Report |
+| RPT-008 | Card Collection Report |
+| RPT-009 | Credit Sales Report |
+| RPT-010 | Expense and Adjustment Report |
+| RPT-011 | Receipt Processing Report |
+| RPT-012 | Manual Correction Report |
+| RPT-013 | Approval History Report |
+| RPT-014 | Audit Report |
+| RPT-015 | Shift Status Report |
+
+---
+
+## 19.2 RPT-001 — Employee Shift Reconciliation Report
+
+### Purpose
+
+Provide a complete reconciliation summary for one employee and shift.
+
+### Report Information
+
+- Organization
+- Station
+- DU Serial Number
+- Business Date
+- Shift Number
+- Employee
+- Assigned Nozzles
+- Fuel Quantity by Fuel Type
+- Expected Sales Amount
+- Cash Total
+- UPI Total
+- Card Total
+- Credit Total
+- Adjustment Totals
+- Accounted Amount
+- Difference
+- Tolerance
+- Status
+- Reviewer and Approver Information
+
+### Formats
+
+- PDF
+- Excel
+
+---
+
+## 19.3 RPT-002 — Shift Reconciliation Report
+
+### Purpose
+
+Provide consolidated reconciliation for the complete shift.
+
+### Report Information
+
+- Shift Information
+- Employee Summaries
+- Nozzle-Wise Sales
+- Fuel-Type Totals
+- Collection Totals
+- Adjustment Totals
+- Difference
+- Approval History
+- Final Status
+
+---
+
+## 19.4 RPT-003 — Station Daily Sales Summary
+
+### Filters
+
+- Organization
+- Station
+- Business Date
+- Dispenser Unit
+
+### Information
+
+- Number of Shifts
+- Fuel Quantity by Fuel Type
+- Sales Amount by Fuel Type
+- Total Collections
+- Shortage Total
+- Excess Total
+- Approved and Pending Shifts
+
+---
+
+## 19.5 RPT-004 — Fuel-Type Sales Summary
+
+### Information
+
+- Station
+- Date Range
+- Fuel Type
+- Quantity Sold
+- Expected Sales Amount
+- Receipt Amount Difference
+- Variance
+
+---
+
+## 19.6 RPT-005 — Shortage and Excess Report
+
+### Filters
+
+- Station
+- Employee
+- Business Date Range
+- Status
+- Approval Status
+
+### Information
+
+- Shift
+- Employee
+- Expected Amount
+- Accounted Amount
+- Difference
+- Reviewer Remarks
+- Approver Remarks
+- Final Decision
+
+---
+
+## 19.7 RPT-006 — Cash Denomination Summary
+
+### Information
+
+- Shift
+- Employee
+- Denomination
+- Quantity
+- Calculated Amount
+- Cash Total
+
+---
+
+## 19.8 RPT-007 — UPI Terminal Collection Report
+
+### Information
+
+- Station
+- Shift
+- Employee
+- UPI Provider
+- Terminal ID
+- Amount
+- Entry Date and Time
+- Total UPI Amount
+
+---
+
+## 19.9 RPT-008 — Card Collection Report
+
+### Information
+
+- Station
+- Shift
+- Employee
+- Terminal Reference
+- Batch or Settlement Reference
+- Amount
+- Total Card Amount
+
+---
+
+## 19.10 RPT-009 — Credit Sales Report
+
+### Information
+
+- Station
+- Shift
+- Employee
+- Customer
+- Account Reference
+- Vehicle Number
+- Amount
+- Settlement Status, where applicable
+
+---
+
+## 19.11 RPT-010 — Expense and Adjustment Report
+
+### Information
+
+- Station
+- Shift
+- Employee
+- Adjustment Type
+- Direction
+- Amount
+- Description
+- Approval Status
+- Approved By
+- Approval Date and Time
+
+---
+
+## 19.12 RPT-011 — Receipt Processing Report
+
+### Information
+
+- Shift
+- Receipt Type
+- Filename
+- Upload Time
+- Processing Status
+- DU Serial Number
+- Confidence
+- Number of Processing Attempts
+- Failure Reason, where applicable
+
+---
+
+## 19.13 RPT-012 — Manual Correction Report
+
+### Information
+
+- Receipt
+- Nozzle
+- Field
+- Original Value
+- Corrected Value
+- Reason
+- Corrected By
+- Corrected Date and Time
+
+---
+
+## 19.14 RPT-013 — Approval History Report
+
+### Information
+
+- Reconciliation
+- Approval Level
+- User
+- Action
+- Remarks
+- Previous Status
+- New Status
+- Date and Time
+
+---
+
+## 19.15 RPT-014 — Audit Report
+
+### Filters
+
+- Date Range
+- User
+- Station
+- Action
+- Entity Type
+
+### Information
+
+- User
+- Action
+- Record
+- Previous Value
+- New Value
+- Date and Time
+- Source Information, where available
+
+---
+
+## 19.16 RPT-015 — Shift Status Report
+
+### Information
+
+- Station
+- DU Serial Number
+- Business Date
+- Shift Number
+- Employee
+- Current Status
+- Pending Activity
+- Last Updated Time
+- Assigned Reviewer or Approver
+
+---
+
+## 19.17 Common Report Requirements
+
+All reports shall:
+
+- Respect user role and station access.
+- Support appropriate date and station filters.
+- Display generation date and time.
+- Display the user who generated the report.
+- Use consistent monetary and quantity formatting.
+- Support PDF or Excel where approved.
+- Avoid exposing sensitive information to unauthorized users.
