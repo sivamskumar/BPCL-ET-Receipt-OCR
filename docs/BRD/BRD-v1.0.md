@@ -11,7 +11,7 @@
 | Project Name | Fuel Station Shift Reconciliation System |
 | Document Name | Business Requirements Document |
 | Version | 1.0 |
-| Status | Draft |
+| Status | Draft for Client Review |
 | Prepared By | Sivakumar Mani |
 | Reviewed By | To Be Confirmed |
 | Approved By | Client |
@@ -22,9 +22,13 @@
 # Revision History
 
 | Version | Date | Author | Description |
-|---------|------|--------|-------------|
-| 0.1 | July 2026 | Sivakumar Mani | Initial Draft |
-| 1.0 | Pending | Pending | Client Approved Version |
+|---|---|---|---|
+| 0.1 | July 2026 | Sivakumar Mani | Initial BRD structure |
+| 0.2 | July 2026 | Sivakumar Mani | Business overview |
+| 0.3 | July 2026 | Sivakumar Mani | Functional requirements |
+| 0.4 | July 2026 | Sivakumar Mani | Business rules and quality requirements |
+| 0.5 | July 2026 | Sivakumar Mani | Workflows, screens and reports |
+| 1.0 Draft | July 2026 | Sivakumar Mani | Consolidated draft for client review |
 
 ---
 
@@ -5481,3 +5485,557 @@ All reports shall:
 - Use consistent monetary and quantity formatting.
 - Support PDF or Excel where approved.
 - Avoid exposing sensitive information to unauthorized users.
+
+---
+
+# 20. Assumptions
+
+The following assumptions apply to the initial release.
+
+## ASM-001 — Receipt Availability
+
+Employees will obtain readable Start and End Reading Receipts from the dispenser unit for every shift.
+
+## ASM-002 — Receipt Format
+
+The initial OCR solution will be optimized for the receipt formats and sample images supplied by the client.
+
+## ASM-003 — Device Availability
+
+Employees will have access to a supported desktop or mobile device with a modern web browser.
+
+## ASM-004 — Network Availability
+
+Users will have sufficient network connectivity to access the centralized application and upload receipt images.
+
+## ASM-005 — Master Data Accuracy
+
+Station, dispenser-unit, nozzle, employee, assignment and fuel-price information will be configured accurately before operational use.
+
+## ASM-006 — User Responsibility
+
+Employees will enter cash, UPI, card, credit and adjustment information accurately.
+
+## ASM-007 — Approval Availability
+
+Authorized Level-1 Reviewers and Level-2 Approvers will be available to complete the approval workflow.
+
+## ASM-008 — Supported Currency
+
+The initial release will use Indian Rupees as the operational currency.
+
+## ASM-009 — Initial Fuel Types
+
+The initial implementation will support Petrol and Diesel. Additional fuel types may be introduced later.
+
+## ASM-010 — Centralized Deployment
+
+The application is expected to use a centralized server and database, subject to final hosting approval.
+
+## ASM-011 — Receipt Storage
+
+Receipt images will initially be stored in secured file storage, with associated metadata retained in the database.
+
+## ASM-012 — Client-Supplied Test Data
+
+The client will provide sufficient representative receipt samples, including clear, blurred, rotated and low-quality images, for OCR testing.
+
+---
+
+# 21. Constraints
+
+## CON-001 — Receipt Image Quality
+
+OCR accuracy depends on receipt condition, image resolution, lighting, focus, orientation and print quality.
+
+## CON-002 — Receipt Format Changes
+
+Changes to dispenser receipt layouts may require OCR and parser configuration updates.
+
+## CON-003 — Network Dependence
+
+The centralized web application requires network access unless an offline capability is added in a future release.
+
+## CON-004 — Device Capability
+
+Camera capture and file-selection behaviour may vary across devices and browsers.
+
+## CON-005 — Client Infrastructure
+
+Performance and availability depend on the final hosting environment, network and server capacity.
+
+## CON-006 — Manual Information
+
+Cash, UPI, card, credit and adjustment totals depend on accurate employee entry unless external systems are integrated later.
+
+## CON-007 — Approval Turnaround
+
+Shift closure may be delayed if reviewers or approvers do not complete actions promptly.
+
+## CON-008 — Historical Data Volume
+
+The fourteen-month retention requirement will influence database and receipt-storage capacity.
+
+## CON-009 — External Integration
+
+Automatic UPI, card, bank and ERP verification are outside the initial release.
+
+## CON-010 — Browser Support
+
+Only client-approved browser versions will be formally tested and supported.
+
+---
+
+# 22. Project and Business Risks
+
+| Risk ID | Risk | Impact | Mitigation |
+|---|---|---|---|
+| RSK-001 | Poor receipt-image quality | Incorrect OCR values | Image validation, preprocessing and manual review |
+| RSK-002 | Receipt layout changes | Extraction failures | Template-based parsing and configurable OCR profiles |
+| RSK-003 | Incorrect master configuration | Wrong employee allocation or price calculation | Validation, approval and configuration audit |
+| RSK-004 | Incorrect collection entry | Reconciliation mismatch | Entry validation, summaries and reviewer verification |
+| RSK-005 | Network failure during upload | Interrupted workflow | Draft saving, retry and resumable workflow where feasible |
+| RSK-006 | Unauthorized access | Data exposure or improper approval | Authentication, roles, station restrictions and audit |
+| RSK-007 | Insufficient hosting capacity | Slow response or failure | Capacity planning and performance testing |
+| RSK-008 | Delayed client decisions | Schedule impact | Maintain an open-decision register and target dates |
+| RSK-009 | Limited OCR training samples | Lower initial accuracy | Obtain representative client samples early |
+| RSK-010 | Approval delays | Shift remains pending | Dashboards, pending queues and future notifications |
+| RSK-011 | Incomplete backup | Loss of database or receipt files | Coordinated database and file-storage backups |
+| RSK-012 | Requirement changes after approval | Rework and timeline impact | Formal change-control process |
+
+---
+
+# 23. Future Enhancements
+
+The following capabilities may be considered for later releases:
+
+- Native Android and iOS applications
+- Offline receipt capture and synchronization
+- Automatic UPI settlement integration
+- Automatic card-terminal integration
+- Bank deposit reconciliation
+- Credit-customer master and settlement management
+- ERP and accounting integration
+- Tank inventory reconciliation
+- Fuel-delivery and stock management
+- SMS, email and push notifications
+- Multi-language interface
+- Multi-organization support
+- Advanced dashboards and analytics
+- Scheduled report delivery
+- Cloud object storage
+- Electronic signatures
+- Fraud and anomaly detection
+- Machine-learning-assisted OCR correction
+- Automatic fuel-price synchronization
+- Biometric authentication
+- Additional fuel types and alternate-energy products
+
+Future enhancements shall be evaluated through a formal change request and estimation process.
+
+---
+
+# 24. Open Business Decisions
+
+| Decision ID | Topic | Current Status | Required Client Decision |
+|---|---|---|---|
+| DEC-001 | UPI Entry Model | Confirmed | Capture TID and total amount for each UPI terminal |
+| DEC-002 | Approval Levels | Confirmed | Two-level review and approval |
+| DEC-003 | Data Retention | Confirmed | Retain operational data for fourteen months |
+| DEC-004 | Reconciliation Tolerance | Pending Value | Confirm initial amount and configuration level |
+| DEC-005 | Hosting Model | Pending | Confirm office server, head-office server, data centre or cloud |
+| DEC-006 | Card Entry Model | Pending Confirmation | Total by terminal or individual transactions |
+| DEC-007 | Adjustment Approval | Pending Confirmation | Identify adjustment types requiring approval |
+| DEC-008 | Rounding Rules | Pending Confirmation | Confirm quantity, price and monetary rounding |
+| DEC-009 | Receipt Limits | Pending Confirmation | Confirm file formats, maximum size and minimum resolution |
+| DEC-010 | Archive or Delete | Pending Confirmation | Decide handling of records after fourteen months |
+| DEC-011 | Credit Settlement | Pending Confirmation | Confirm whether settlement is part of Version 1.0 |
+| DEC-012 | Approved Shift Reopening | Pending Confirmation | Define roles and workflow for reopening |
+| DEC-013 | Production User Volume | Pending | Confirm stations, employees and concurrent users |
+| DEC-014 | Notification Requirements | Pending Confirmation | Confirm whether alerts are required in Version 1.0 |
+| DEC-015 | OCR Correction Permission | Pending Confirmation | Employee, reviewer or supervisor access |
+| DEC-016 | Approval Remarks | Partially Confirmed | Confirm whether remarks are mandatory for matched cases |
+| DEC-017 | Retention Start Date | Pending Confirmation | Business date, closure date or approval date |
+| DEC-018 | Deployment Availability | Pending Confirmation | Confirm operating hours and availability target |
+
+Open decisions shall be reviewed before the relevant design or implementation is finalized.
+
+---
+
+# 25. Acceptance Criteria
+
+The first production release shall be considered functionally acceptable when the following criteria are met.
+
+## AC-001 — Master Configuration
+
+Authorized users can configure:
+
+- Organization
+- Fuel Station
+- Dispenser Unit
+- Nozzles
+- Employees
+- Nozzle Assignments
+- Fuel Types
+- Fuel Prices
+- Users and Roles
+
+## AC-002 — Shift Creation
+
+An employee can open a valid shift using configured station, DU, employees and nozzle assignments.
+
+## AC-003 — Start Receipt Processing
+
+The employee can upload, process, review and confirm a Start Reading Receipt.
+
+## AC-004 — End Receipt Processing
+
+The employee can upload, process, review and confirm an End Reading Receipt.
+
+## AC-005 — Receipt Validation
+
+The system validates the DU Serial Number, nozzles, ATOT and VTOT values for both receipts.
+
+## AC-006 — Manual Correction
+
+Authorized users can correct OCR values while preserving the original value, reason, user and timestamp.
+
+## AC-007 — Fuel Sales Calculation
+
+The system calculates:
+
+- Quantity Sold
+- Receipt Amount Difference
+- Price-Based Sales Amount
+- Amount Variance
+
+## AC-008 — Employee Allocation
+
+Nozzle sales are allocated to the employee assigned for the shift.
+
+## AC-009 — Cash Entry
+
+Employees can enter denomination quantities, and the system calculates the cash total.
+
+## AC-010 — UPI Entry
+
+Employees can enter UPI Terminal ID and total amount for one or more terminals.
+
+## AC-011 — Card Entry
+
+Employees can enter card collection details and totals.
+
+## AC-012 — Credit Entry
+
+Employees can record credit sales with the required customer information.
+
+## AC-013 — Adjustment Entry
+
+Employees and authorized reviewers can record and approve applicable expenses and adjustments.
+
+## AC-014 — Employee Reconciliation
+
+The system calculates expected amount, accounted amount, difference and status for each employee.
+
+## AC-015 — Shift Reconciliation
+
+The system calculates the complete shift-level reconciliation.
+
+## AC-016 — Configurable Tolerance
+
+The system applies a configured reconciliation tolerance without requiring source-code changes.
+
+## AC-017 — Level-1 Review
+
+A Reviewer can:
+
+- Approve a matched reconciliation
+- Return shortage or excess to the employee
+- Approve a resubmitted shortage or excess with remarks
+
+## AC-018 — Level-2 Approval
+
+An Approver can:
+
+- Approve a reconciliation
+- Approve shortage or excess with remarks
+- Reject and return the reconciliation to the employee
+
+## AC-019 — Approval History
+
+Every submission, return, resubmission, approval and rejection is retained.
+
+## AC-020 — Shift Closure
+
+A fully approved shift can be closed and becomes read-only.
+
+## AC-021 — Reports
+
+Authorized users can generate the approved reconciliation, sales, collection, adjustment and audit reports.
+
+## AC-022 — Responsive Access
+
+Primary employee, reviewer and approver workflows are usable from supported desktop and mobile browsers.
+
+## AC-023 — Data Retention
+
+Operational data is retained for at least fourteen months.
+
+## AC-024 — Security
+
+The system enforces authentication, roles, station restrictions and approval segregation.
+
+## AC-025 — Auditability
+
+An authorized auditor can trace a completed reconciliation to its source receipts, readings, prices, collections, adjustments and approval actions.
+
+## AC-026 — User Acceptance Testing
+
+The client completes User Acceptance Testing and formally approves the agreed test scenarios.
+
+---
+
+# 26. Glossary
+
+| Term | Definition |
+|---|---|
+| Accounted Amount | Total cash, UPI, card, credit and applicable adjustments recorded for reconciliation |
+| Adjustment | Approved financial or operational value added to or deducted from the accounted amount |
+| Approver | User authorized to perform Level-2 approval |
+| ATOT | Accumulated monetary total printed on the dispenser receipt |
+| BRD | Business Requirements Document |
+| Business Date | Operational date associated with a shift |
+| Cash Denomination | Currency-note or coin value used to calculate physical cash |
+| Credit Sale | Fuel sale for which payment is not received immediately |
+| Dispenser Unit | Fuel-dispensing unit identified by a DU Serial Number |
+| DU | Dispenser Unit |
+| DU Serial Number | Unique serial number printed on the Electronic Totalizer receipt |
+| ECAL | Calibration-related factor printed on certain receipts |
+| Employee Reconciliation | Comparison of one employee’s expected sales with accounted collections |
+| End Reading Receipt | Receipt captured at the end of a shift |
+| Expected Sales Amount | Fuel-sales amount calculated from assigned nozzle readings |
+| Fuel Price | Effective selling price per litre for a fuel type |
+| Fuel Type | Petrol, Diesel or another configured fuel product |
+| OCR | Optical Character Recognition |
+| Nozzle | Individual fuel-dispensing outlet |
+| OCR Confidence | Indicator of recognition certainty used to trigger review |
+| Reconciliation | Comparison between expected fuel sales and accounted collections |
+| Reconciliation Tolerance | Permitted difference treated as a match |
+| Reviewer | User authorized to conduct Level-1 review |
+| Shift | Operational reconciliation period for a station and dispenser unit |
+| Shift Reconciliation | Consolidated reconciliation covering all employees in a shift |
+| Start Reading Receipt | Receipt captured at the beginning of a shift |
+| TID | Terminal ID used to identify a UPI or payment machine |
+| UPI | Unified Payments Interface |
+| VTOT | Accumulated fuel-volume total printed on the receipt |
+
+---
+
+# 27. Appendix
+
+## 27.1 Core Calculation Formulas
+
+### Fuel Quantity
+
+```text
+Quantity Sold =
+    End VTOT
+  - Start VTOT
+```
+
+### Receipt Amount
+
+```text
+Receipt Amount Difference =
+    End ATOT
+  - Start ATOT
+```
+
+### Price-Based Sales
+
+```text
+Calculated Sales Amount =
+    Quantity Sold
+  × Effective Price Per Litre
+```
+
+### Cash Denomination
+
+```text
+Denomination Amount =
+    Denomination Value
+  × Quantity
+```
+
+### Employee Accounted Amount
+
+```text
+Employee Accounted Amount =
+    Cash Total
+  + UPI Total
+  + Card Total
+  + Credit Total
+  + Positive Adjustment Total
+  - Deductible Adjustment Total
+```
+
+### Reconciliation Difference
+
+```text
+Difference =
+    Accounted Amount
+  - Expected Sales Amount
+```
+
+### Reconciliation Status
+
+```text
+Absolute Difference <= Allowed Tolerance
+    → MATCHED
+
+Difference < -Allowed Tolerance
+    → SHORTAGE
+
+Difference > Allowed Tolerance
+    → EXCESS
+```
+
+---
+
+## 27.2 Confirmed Client Decisions
+
+| Topic | Confirmed Decision |
+|---|---|
+| UPI Collection | Record TID and total amount for each UPI terminal |
+| Approval Workflow | Two approval levels |
+| Initial Shortage or Excess | Return to employee for correction |
+| Shortage or Excess After Resubmission | Level-1 Reviewer may approve with remarks and forward |
+| Level-2 Decision | Approve with remarks or reject and return |
+| Data Retention | Fourteen months |
+| Reconciliation Tolerance | Configurable; initial value pending |
+
+---
+
+## 27.3 Requirement Identification
+
+| Prefix | Meaning |
+|---|---|
+| FR | Functional Requirement |
+| NFR | Non-Functional Requirement |
+| SEC | Security Requirement |
+| RET | Retention Requirement |
+| BCK | Backup Requirement |
+| HST | Hosting Requirement |
+| CMP | Compliance Requirement |
+| SCR | Screen Specification |
+| RPT | Report Specification |
+| BR | Business Rule |
+| AC | Acceptance Criterion |
+| DEC | Open Decision |
+| RSK | Risk |
+| ASM | Assumption |
+| CON | Constraint |
+
+---
+
+# 28. Client Approval
+
+## 28.1 Document Status
+
+```text
+DRAFT FOR CLIENT REVIEW
+```
+
+This document becomes the approved business baseline only after authorized client sign-off.
+
+---
+
+## 28.2 Approval Record
+
+| Role | Name | Organization | Decision | Signature | Date |
+|---|---|---|---|---|---|
+| Business Owner | | | Approved / Rejected | | |
+| Operations Representative | | | Approved / Rejected | | |
+| Project Sponsor | | | Approved / Rejected | | |
+| Prepared By | Sivakumar Mani | Project Team | Submitted | | |
+
+---
+
+## 28.3 Client Review Comments
+
+| Comment ID | Section | Client Comment | Resolution | Status |
+|---|---|---|---|---|
+| | | | | |
+
+---
+
+## 28.4 Approval Statement
+
+By approving this document, the client confirms that:
+
+- The business requirements accurately represent the agreed operational needs.
+- Open decisions are acknowledged and will be resolved through documented follow-up.
+- Changes after approval may affect project scope, cost and delivery timeline.
+- Approved changes shall follow the agreed change-control process.
+
+---
+
+# 29. Document Conclusion
+
+This Business Requirements Document defines the initial business scope for the Fuel Station Shift Reconciliation System.
+
+The approved BRD will be used as the baseline for:
+
+- Project estimation
+- Delivery planning
+- Solution design
+- Database design
+- User-interface design
+- Development
+- Testing
+- User Acceptance Testing
+- Deployment
+- Training
+
+Any material requirement introduced after approval shall be evaluated through formal change control.
+
+---
+
+# Final Table of Contents
+
+1. Executive Summary  
+2. Business Background  
+3. Current Business Process  
+4. Problems in Existing Process  
+5. Proposed Solution  
+6. Business Objectives  
+7. Project Scope  
+8. Stakeholders  
+9. Functional Requirements  
+10. Business Rules  
+11. Non-Functional Requirements  
+12. Security Requirements  
+13. Data Retention and Archival Requirements  
+14. Backup and Recovery Requirements  
+15. Hosting and Deployment Requirements  
+16. Compliance and Audit Requirements  
+17. Business Process Workflows  
+18. Screen Specifications  
+19. Report Specifications  
+20. Assumptions  
+21. Constraints  
+22. Project and Business Risks  
+23. Future Enhancements  
+24. Open Business Decisions  
+25. Acceptance Criteria  
+26. Glossary  
+27. Appendix  
+28. Client Approval  
+29. Document Conclusion  
+
+---
+
+> **Document Status:** Draft for Client Review  
+> **Version:** 1.0  
+> **Retention Requirement:** Fourteen Months  
+> **Open Decisions:** Reconciliation tolerance value, hosting model and other items listed in Section 24
