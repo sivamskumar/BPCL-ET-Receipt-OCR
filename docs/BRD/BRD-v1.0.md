@@ -2953,3 +2953,420 @@ The system shall allow an employee to submit a completed reconciliation for Leve
 - Submission date, time and user are recorded.
 - Submitted data becomes protected from ordinary editing.
 - The workflow moves to Level-1 Review.
+
+---
+
+# 9.16 Approval Workflow Module
+
+## Overview
+
+The Fuel Station Shift Reconciliation System shall support a configurable two-level approval workflow.
+
+The workflow ensures that every completed reconciliation is independently reviewed before the shift is permanently closed.
+
+The approval workflow shall support:
+
+- Level-1 Review
+- Return to Employee
+- Employee Resubmission
+- Level-2 Approval
+- Final Approval
+- Final Rejection
+
+---
+
+## FR-109 — Assign Level-1 Reviewer
+
+**Module ID:** APR-001
+
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall determine the Level-1 Reviewer responsible for reviewing the submitted reconciliation.
+
+### Acceptance Criteria
+
+- Reviewer assignment shall be configurable.
+- Reviewer shall belong to the same organization.
+- Reviewer assignment shall be recorded.
+- Changes shall be audited.
+
+---
+
+## FR-110 — Review Submitted Reconciliation
+
+**Module ID:** APR-002
+
+**Priority:** Critical
+
+### Primary Actor
+
+Reviewer
+
+### Business Requirement
+
+The reviewer shall review:
+
+- OCR readings
+- Fuel calculations
+- Collections
+- Adjustments
+- Reconciliation Difference
+
+before taking an approval decision.
+
+### Acceptance Criteria
+
+Reviewer shall have read-only access until an action is selected.
+
+---
+
+## FR-111 — Approve Matching Reconciliation
+
+**Module ID:** APR-003
+
+**Priority:** Critical
+
+### Business Requirement
+
+If reconciliation status is MATCHED, the reviewer may approve the reconciliation.
+
+### Acceptance Criteria
+
+- Reviewer remarks optional.
+- Status changes to
+
+```text
+LEVEL_1_APPROVED
+```
+
+- Workflow proceeds to Level-2 Approval.
+
+---
+
+## FR-112 — Return Shortage Reconciliation
+
+**Module ID:** APR-004
+
+**Priority:** Critical
+
+### Business Requirement
+
+If shortage is detected, the reviewer may return the reconciliation to the employee.
+
+### Mandatory Information
+
+- Return Reason
+- Reviewer Remarks
+
+### Acceptance Criteria
+
+Status becomes
+
+```text
+RETURNED_TO_EMPLOYEE
+```
+
+Employee receives notification within the application.
+
+---
+
+## FR-113 — Return Excess Reconciliation
+
+**Module ID:** APR-005
+
+**Priority:** Critical
+
+### Business Requirement
+
+If excess is detected, the reviewer may return the reconciliation to the employee.
+
+### Acceptance Criteria
+
+Return reason is mandatory.
+
+Reviewer remarks are mandatory.
+
+Status changes to
+
+```text
+RETURNED_TO_EMPLOYEE
+```
+
+---
+
+## FR-114 — Employee Resubmission
+
+**Module ID:** APR-006
+
+**Priority:** Critical
+
+### Primary Actor
+
+Employee
+
+### Business Requirement
+
+The employee shall review reviewer remarks, make corrections and resubmit the reconciliation.
+
+### Acceptance Criteria
+
+System records:
+
+- Resubmission Number
+- User
+- Date
+- Time
+
+Status becomes
+
+```text
+RESUBMITTED
+```
+
+---
+
+## FR-115 — Approve with Remarks
+
+**Module ID:** APR-007
+
+**Priority:** Critical
+
+### Business Requirement
+
+If a shortage or excess still exists after resubmission, the reviewer may approve with mandatory remarks.
+
+### Mandatory Fields
+
+- Remarks
+- Justification
+
+### Acceptance Criteria
+
+Status becomes
+
+```text
+LEVEL_1_APPROVED_WITH_REMARKS
+```
+
+Workflow proceeds to Level-2 Approval.
+
+---
+
+## FR-116 — Assign Level-2 Approver
+
+**Module ID:** APR-008
+
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall assign the reconciliation to a Level-2 Approver.
+
+### Acceptance Criteria
+
+Assignment shall be configurable.
+
+Assignment shall be audited.
+
+---
+
+## FR-117 — Review Level-2 Approval
+
+**Module ID:** APR-009
+
+**Priority:** Critical
+
+### Primary Actor
+
+Approver
+
+### Business Requirement
+
+The Level-2 Approver shall review:
+
+- Reconciliation
+- Reviewer Remarks
+- Employee Corrections
+- Audit History
+
+before taking a decision.
+
+---
+
+## FR-118 — Final Approval
+
+**Module ID:** APR-010
+
+**Priority:** Critical
+
+### Business Requirement
+
+The Level-2 Approver may approve the reconciliation.
+
+### Acceptance Criteria
+
+Status becomes
+
+```text
+APPROVED
+```
+
+Shift becomes eligible for closure.
+
+Approval details recorded.
+
+---
+
+## FR-119 — Final Rejection
+
+**Module ID:** APR-011
+
+**Priority:** Critical
+
+### Business Requirement
+
+The Level-2 Approver may reject the reconciliation.
+
+### Mandatory Fields
+
+- Rejection Reason
+- Remarks
+
+### Acceptance Criteria
+
+Status becomes
+
+```text
+RETURNED_TO_EMPLOYEE
+```
+
+Employee shall correct and resubmit.
+
+---
+
+## FR-120 — Maintain Approval History
+
+**Module ID:** APR-012
+
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall maintain complete approval history.
+
+### Approval History
+
+- Reviewer
+- Approver
+- Action
+- Remarks
+- Date
+- Time
+- Previous Status
+- New Status
+
+### Acceptance Criteria
+
+Approval history shall never be deleted.
+
+Approval history shall be available in reports.
+
+---
+
+# 10 Business Rules
+
+## BR-001
+
+Start and End Reading Receipts shall belong to the same DU Serial Number.
+
+---
+
+## BR-002
+
+End VTOT shall not be less than Start VTOT.
+
+---
+
+## BR-003
+
+End ATOT shall not be less than Start ATOT.
+
+---
+
+## BR-004
+
+Fuel Quantity Sold shall be calculated using
+
+```text
+End VTOT − Start VTOT
+```
+
+---
+
+## BR-005
+
+Expected Sales Amount shall use the effective fuel price applicable during the shift.
+
+---
+
+## BR-006
+
+Only confirmed OCR readings shall participate in calculations.
+
+---
+
+## BR-007
+
+Each nozzle shall belong to only one employee during a shift.
+
+---
+
+## BR-008
+
+Historical shift assignments shall never change after shift closure.
+
+---
+
+## BR-009
+
+Every OCR correction shall be audited.
+
+---
+
+## BR-010
+
+Every approval shall be audited.
+
+---
+
+## BR-011
+
+Employee reconciliation shall be completed before shift reconciliation.
+
+---
+
+## BR-012
+
+Configured reconciliation tolerance shall determine MATCHED, SHORTAGE or EXCESS.
+
+---
+
+## BR-013
+
+Data retention period shall be fourteen (14) months.
+
+---
+
+## BR-014
+
+Approved shifts shall become read-only.
+
+---
+
+## BR-015
+
+Deleted business transactions are not permitted.
+
+Business records shall be retained for audit purposes.
