@@ -29,7 +29,7 @@
 | 0.4 | July 2026 | Sivakumar Mani | Business rules and quality requirements |
 | 0.5 | July 2026 | Sivakumar Mani | Workflows, screens and reports |
 | 1.0 Draft | July 2026 | Sivakumar Mani | Consolidated draft for client review |
-| 1.1 Draft | August 2026 | Sivakumar Mani | Client review updates - completed screen specifications and added employee profile management and reporting |
+| 1.1 Draft | August 2026 | Sivakumar Mani | Client review updates - completed screen specifications, employee profile management, employee reporting and employee shift-hours tracking |
 
 ---
 
@@ -3465,6 +3465,133 @@ Protected employee information includes, but is not limited to:
 
 ---
 
+# 9.18 Employee Shift Hours Management
+
+## FR-126 — Record Employee Shift Hours
+
+**Module ID:** ESH-001
+**Priority:** Critical
+**Primary Actors:** Employee, Administrator
+
+### Business Requirement
+
+The system shall maintain the working period of each employee participating in an operational shift.
+
+### Employee Shift Information
+
+The employee shift record shall include:
+
+- Employee
+- Operational Shift
+- Fuel Station
+- Employee Shift Start Date and Time
+- Employee Shift End Date and Time
+- Total Shift Hours
+- Status
+- Remarks, where applicable
+
+### Acceptance Criteria
+
+- Employee is mandatory.
+- Operational Shift is mandatory.
+- Employee Shift Start Date and Time are mandatory when the employee begins work.
+- Employee Shift End Date and Time shall be recorded when the employee completes work.
+- Employee Shift End Date and Time shall not precede Employee Shift Start Date and Time.
+- The system shall calculate Total Shift Hours after both start and end times are available.
+- Employee shift records shall remain associated with the corresponding operational shift.
+- Historical employee shift-hour records shall remain available for reporting and audit.
+
+---
+
+## FR-127 — Calculate Employee Shift Hours
+
+**Module ID:** ESH-002
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall calculate the working duration of an employee using the recorded employee shift start and end date/time.
+
+### Calculation
+
+```text
+Employee Shift Duration =
+    Employee Shift End Date/Time
+  - Employee Shift Start Date/Time
+```
+
+### Acceptance Criteria
+
+- Shift duration shall only be calculated when both start and end date/time values are available.
+- The calculated duration shall not be negative.
+- The calculation shall correctly support shifts that cross midnight.
+- The duration shall be stored or displayed in a consistent hours-and-minutes format.
+- Recalculation shall occur when an authorized correction changes the start or end date/time.
+
+### Example
+
+```text
+Employee Shift Start : 09-Aug-2026 10:00 PM
+Employee Shift End   : 10-Aug-2026 06:00 AM
+
+Total Shift Duration : 8 Hours
+```
+
+---
+
+## FR-128 — Correct Employee Shift Hours
+
+**Module ID:** ESH-003
+**Priority:** High
+**Primary Actor:** Administrator or Authorized Manager
+
+### Business Requirement
+
+The system shall allow authorized users to correct employee shift start or end date/time when an incorrect value has been recorded.
+
+### Acceptance Criteria
+
+- Only authorized users shall correct completed employee shift-hour records.
+- A correction reason shall be mandatory.
+- The original value shall remain available in audit history.
+- The corrected value shall identify the user making the correction.
+- Correction date and time shall be recorded.
+- Total Shift Hours shall be recalculated after a correction.
+- Corrections shall not silently alter unrelated reconciliation information.
+
+---
+
+## FR-129 — View Employee Shift Hours
+
+**Module ID:** ESH-004
+**Priority:** High
+**Primary Actors:** Administrator, Manager, Authorized Employee
+
+### Business Requirement
+
+The system shall allow authorized users to view employee shift-hour information.
+
+### Displayed Information
+
+- Employee Code / ID
+- Employee Name
+- Fuel Station
+- Business Date
+- Operational Shift Number
+- Employee Shift Start Date and Time
+- Employee Shift End Date and Time
+- Total Shift Hours
+- Status
+- Remarks
+
+### Acceptance Criteria
+
+- Users shall only view employee shift information permitted by their role and organizational scope.
+- Historical shift-hour information shall remain available according to the applicable retention policy.
+- Employees may only view their own shift-hour information unless additional access is explicitly authorized.
+
+---
+
 # 10 Business Rules
 
 ## BR-001
@@ -3608,6 +3735,42 @@ Employee records containing historical business information shall not be physica
 ## BR-023
 
 Aadhaar Number and other sensitive employee information shall only be accessible to appropriately authorized users.
+
+---
+
+## BR-024
+
+Employee working hours shall be maintained separately for each employee participating in an operational shift.
+
+---
+
+## BR-025
+
+An employee's recorded shift start and end times are not required to be identical to the overall operational shift start and end times.
+
+---
+
+## BR-026
+
+Employee Shift End Date and Time shall not precede Employee Shift Start Date and Time.
+
+---
+
+## BR-027
+
+Employee shift-hour calculation shall support working periods that cross midnight.
+
+---
+
+## BR-028
+
+Changes to completed employee shift start or end times shall require authorization and a correction reason.
+
+---
+
+## BR-029
+
+Historical employee shift-hour records shall remain available even if the employee later becomes INACTIVE or LEFT.
 
 ---
 
@@ -4296,6 +4459,31 @@ The audit record shall identify:
 - New Value, where appropriate and permitted
 
 Sensitive values such as Aadhaar Number shall not be unnecessarily reproduced in plain text within audit records.
+
+---
+
+## SEC-015 — Employee Shift-Hour Change Audit
+
+**Priority:** High
+
+Changes to completed employee shift-hour information shall be auditable.
+
+### Audited Information
+
+- Employee
+- Operational Shift
+- Changed Field
+- Previous Value
+- New Value
+- Correction Reason
+- Changed By
+- Changed Date and Time
+
+### Acceptance Criteria
+
+- Ordinary users shall not modify audit history.
+- Authorized corrections shall preserve the previous value.
+- Audit information shall be available to authorized administrators and auditors.
 
 ---
 
@@ -5366,6 +5554,7 @@ Supported statuses shall include:
 - Deactivate Employee
 - Mark Employee as Left
 - Search Employee
+- View Employee Shift Hours
 
 ### Search and Filter Options
 
@@ -5520,12 +5709,24 @@ Allow an employee to open a new operational shift.
 - Participating Employees
 - Assigned Nozzles
 
+### Employee Working-Time Information
+
+For each participating employee, the system shall support:
+
+- Employee
+- Employee Shift Start Date and Time
+- Employee Shift Status
+
+The employee working start time may initially default to the operational shift start time where appropriate, but the actual employee working time shall be maintained independently.
+
 ### Business Validation
 
 - Station and DU must be active.
 - Required nozzle assignments must exist.
 - Required fuel prices must exist.
 - Duplicate shift numbers shall be prevented.
+- Only ACTIVE employees may be added to a new operational shift.
+- Employee working-time records shall be associated with the corresponding operational shift.
 
 ---
 
@@ -5556,6 +5757,9 @@ Provide authorized users with a consolidated view of an operational shift and it
 - Approval Status
 - Current Shift Status
 - Remarks
+- Employee Shift Start Date and Time
+- Employee Shift End Date and Time
+- Employee Total Shift Hours
 
 ### Main Actions
 
@@ -5571,6 +5775,7 @@ Actions shall depend on user role and current shift status and may include:
 - View Audit History
 - Cancel Shift, where authorized
 - Close Approved Shift, where authorized
+- View Employee Shift Hours
 
 ### Business Validation
 
@@ -5578,6 +5783,7 @@ Actions shall depend on user role and current shift status and may include:
 - Available actions shall depend on current shift status.
 - Closed or cancelled shifts shall be read-only during normal operation.
 - Historical assignments used by the shift shall be displayed from the shift snapshot.
+- Employee working times shall be displayed independently from the overall operational shift start and end times.
 
 ---
 
@@ -6068,6 +6274,8 @@ Allow authorized administrators to maintain application users, access roles and 
 | RPT-013 | Approval History Report |
 | RPT-014 | Audit Report |
 | RPT-015 | Shift Status Report |
+| RPT-017 | Employee Details Report |
+| RPT-018 | Employee Shift Hours Report |
 
 ---
 
@@ -6395,6 +6603,65 @@ Subject to final reporting implementation:
 - Date filters shall support historical employee reporting.
 - Sensitive information shall not be exposed to unauthorized users.
 - Report generation shall follow the common report security requirements.
+
+---
+
+## 19.19 RPT-018 — Employee Shift Hours Report
+
+### Purpose
+
+Provide authorized users with employee working-hour information for a selected reporting period.
+
+### Filters
+
+The report shall support appropriate filters including:
+
+- Organization
+- Fuel Station
+- Employee Code / ID
+- Employee Name
+- Business Date
+- Date Range
+- Operational Shift Number
+- Employment Status
+
+### Report Information
+
+The report shall include:
+
+- Employee Code / ID
+- Employee Name
+- Fuel Station
+- Business Date
+- Operational Shift Number
+- Employee Shift Start Date and Time
+- Employee Shift End Date and Time
+- Total Shift Hours
+- Shift-Hour Status
+- Remarks, where applicable
+
+### Summary Information
+
+Where applicable, the report may provide:
+
+- Number of Employee Shifts
+- Total Hours Worked for the Selected Period
+
+### Report Formats
+
+Subject to final reporting implementation:
+
+- PDF
+- Excel
+
+### Acceptance Criteria
+
+- The report shall respect organization and station access restrictions.
+- Historical employees shall remain reportable.
+- Shifts crossing midnight shall display the correct working duration.
+- Corrected shift times shall use the latest approved values.
+- The underlying correction history shall remain auditable.
+- The report shall support employee-specific and date-range reporting.
 
 ---
 
@@ -6743,6 +7010,23 @@ The system shall:
 
 ---
 
+## AC-028 — Employee Shift Hours
+
+The system shall maintain employee working hours independently for every employee participating in an operational shift.
+
+The system shall:
+
+- Record employee shift start date and time.
+- Record employee shift end date and time.
+- Calculate total shift hours.
+- Support shifts crossing midnight.
+- Allow authorized corrections with mandatory reasons.
+- Preserve correction history.
+- Provide an Employee Shift Hours Report.
+- Preserve historical shift-hour information for INACTIVE and LEFT employees.
+
+---
+
 # 26. Glossary
 
 | Term | Definition |
@@ -6781,6 +7065,10 @@ The system shall:
 | Date of Leaving | Date on which an employee left the organization |
 | Employee Profile | Master record containing employee identification, contact, employment and authorized personal information |
 | Employment Status | Current employee state such as ACTIVE, INACTIVE or LEFT |
+| Employee Shift | Employee-specific working period associated with an operational shift |
+| Employee Shift Start | Date and time at which an employee begins the recorded working period |
+| Employee Shift End | Date and time at which an employee completes the recorded working period |
+| Employee Shift Hours | Calculated working duration between the employee's recorded shift start and end date/time |
 
 ---
 
@@ -6868,6 +7156,8 @@ Difference > Allowed Tolerance
 | Reconciliation Tolerance | Configurable; initial value pending |
 | Employee Profile | Maintain Employee ID, name, contact number, Aadhaar Number, address, photograph, Date of Joining, Date of Leaving and Employment Status |
 | Employee Reporting | Provide an Employee Details Report |
+| Employee Shift Hours | Maintain employee-specific shift start time, end time and calculated working duration |
+| Employee Shift Reporting | Provide an Employee Shift Hours Report |
 
 ---
 
