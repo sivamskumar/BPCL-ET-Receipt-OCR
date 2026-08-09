@@ -29,7 +29,7 @@
 | 0.4 | July 2026 | Sivakumar Mani | Business rules and quality requirements |
 | 0.5 | July 2026 | Sivakumar Mani | Workflows, screens and reports |
 | 1.0 Draft | July 2026 | Sivakumar Mani | Consolidated draft for client review |
-| 1.1 Draft | August 2026 | Sivakumar Mani | Client review update - completed missing screen specifications |
+| 1.1 Draft | August 2026 | Sivakumar Mani | Client review updates - completed screen specifications and added employee profile management and reporting |
 
 ---
 
@@ -3280,6 +3280,191 @@ Approval history shall be available in reports.
 
 ---
 
+# 9.17 Employee Profile Management
+
+## FR-121 — Maintain Extended Employee Profile
+
+**Module ID:** EMP-001
+**Priority:** Critical
+**Primary Actor:** Administrator
+
+### Business Requirement
+
+The system shall allow an authorized administrator to create and maintain a detailed profile for each employee.
+
+### Employee Profile Information
+
+The employee profile shall include:
+
+- Employee Code / ID
+- Employee Name
+- Contact Number
+- Aadhaar Number
+- Address
+- Employee Photograph
+- Date of Joining
+- Date of Leaving, where applicable
+- Employment Status
+
+### Employment Status
+
+The initial supported employment statuses shall include:
+
+- ACTIVE
+- INACTIVE
+- LEFT
+
+### Acceptance Criteria
+
+- Employee Code / ID is mandatory.
+- Employee Code / ID shall be unique within the organization.
+- Employee Name is mandatory.
+- Contact Number shall support the client-approved mobile-number format.
+- Aadhaar Number shall be treated as sensitive personal information.
+- Address shall support sufficient information to record the employee's residential address.
+- Date of Joining is mandatory.
+- Date of Leaving is optional while the employee is active.
+- Date of Leaving shall not be earlier than Date of Joining.
+- An employee whose status is LEFT shall not participate in new shifts or new nozzle assignments.
+- An INACTIVE employee shall not participate in new shifts or new nozzle assignments until reactivated.
+- Historical employee information shall remain available for authorized reporting and audit purposes.
+
+---
+
+## FR-122 — Maintain Employee Photograph
+
+**Module ID:** EMP-002
+**Priority:** High
+**Primary Actor:** Administrator
+
+### Business Requirement
+
+The system shall allow an authorized administrator to upload and maintain a photograph as part of the employee profile.
+
+### Acceptance Criteria
+
+- The photograph shall be associated with the correct employee.
+- Only approved image formats shall be accepted.
+- File-size limits shall be configurable or defined according to the approved application policy.
+- The user shall be able to preview the photograph before saving where supported.
+- An authorized administrator shall be able to replace an existing photograph.
+- Replacing the photograph shall not affect historical shift or reconciliation information.
+- Photograph access shall follow employee-profile authorization rules.
+
+---
+
+## FR-123 — View Employee Profile
+
+**Module ID:** EMP-003
+**Priority:** High
+**Primary Actors:** Administrator, Authorized Manager
+
+### Business Requirement
+
+The system shall allow authorized users to view employee-profile information.
+
+### Displayed Information
+
+Subject to the user's access permissions, the profile may display:
+
+- Employee Code / ID
+- Employee Name
+- Contact Number
+- Aadhaar Number in an appropriately protected or masked form
+- Address
+- Employee Photograph
+- Date of Joining
+- Date of Leaving
+- Employment Status
+- Assigned Station or Stations
+- Current Nozzle Assignment, where applicable
+
+### Acceptance Criteria
+
+- Users shall only view employee profiles within their permitted organizational scope.
+- Sensitive information shall only be displayed to appropriately authorized users.
+- Aadhaar information shall be masked where full display is not required.
+- Historical employees shall remain searchable by authorized users.
+- Viewing an employee profile shall not permit unauthorized modification.
+
+---
+
+## FR-124 — Maintain Employee Employment Status
+
+**Module ID:** EMP-004
+**Priority:** Critical
+**Primary Actor:** Administrator
+
+### Business Requirement
+
+The system shall allow an authorized administrator to maintain the employment status of an employee without deleting the employee's historical record.
+
+### Supported Statuses
+
+```text
+ACTIVE
+INACTIVE
+LEFT
+```
+
+### Business Behaviour
+
+**ACTIVE**
+
+The employee is currently permitted to participate in operational activities subject to station and nozzle assignments.
+
+**INACTIVE**
+
+The employee record remains available, but the employee shall not participate in new operational activities until reactivated.
+
+**LEFT**
+
+The employee has left the organization and shall not participate in new operational activities.
+
+### Acceptance Criteria
+
+- Employment Status is mandatory.
+- A newly created operational employee shall normally have ACTIVE status.
+- Changing an employee to INACTIVE shall preserve all historical information.
+- Changing an employee to LEFT shall require Date of Leaving.
+- Date of Leaving shall not precede Date of Joining.
+- An employee with LEFT status shall not be assigned to new shifts.
+- An employee with LEFT status shall not receive new nozzle assignments.
+- Historical shifts, assignments, collections, reconciliations and approval records shall remain unchanged.
+- Employment-status changes shall be audited.
+
+---
+
+## FR-125 — Protect Employee Personal Information
+
+**Module ID:** EMP-005
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall protect employee personal information according to role-based access and applicable security requirements.
+
+### Protected Information
+
+Protected employee information includes, but is not limited to:
+
+- Aadhaar Number
+- Contact Number
+- Address
+- Employee Photograph
+
+### Acceptance Criteria
+
+- Access to employee personal information shall be role-controlled.
+- Aadhaar Number shall not be unnecessarily displayed in full.
+- Aadhaar Number shall not be written into ordinary application logs.
+- Sensitive employee information shall not be exposed through unauthorized reports or APIs.
+- Employee photographs shall not be publicly accessible.
+- Unauthorized users shall not be able to retrieve employee personal information by directly accessing application URLs or APIs.
+- Changes to sensitive employee information shall be auditable.
+
+---
+
 # 10 Business Rules
 
 ## BR-001
@@ -3375,6 +3560,54 @@ Approved shifts shall become read-only.
 Deleted business transactions are not permitted.
 
 Business records shall be retained for audit purposes.
+
+---
+
+## BR-016
+
+Every employee shall have a unique Employee Code / ID within the organization.
+
+---
+
+## BR-017
+
+Date of Joining shall be mandatory for an employee.
+
+---
+
+## BR-018
+
+Date of Leaving shall not be earlier than Date of Joining.
+
+---
+
+## BR-019
+
+An employee with Employment Status LEFT shall have a Date of Leaving.
+
+---
+
+## BR-020
+
+Employees with INACTIVE or LEFT status shall not participate in new shifts or receive new nozzle assignments.
+
+---
+
+## BR-021
+
+Changing an employee's employment status shall not modify or remove historical shift, nozzle-assignment, collection, reconciliation or approval information.
+
+---
+
+## BR-022
+
+Employee records containing historical business information shall not be physically deleted through normal application operations.
+
+---
+
+## BR-023
+
+Aadhaar Number and other sensitive employee information shall only be accessible to appropriately authorized users.
 
 ---
 
@@ -4005,6 +4238,64 @@ The system shall record important security events.
 - Unauthorized-access attempt
 - Role change
 - Account activation or deactivation
+
+---
+
+## SEC-013 — Employee Personal Data Protection
+
+**Priority:** Critical
+
+Employee personal information shall be protected from unauthorized access, disclosure and modification.
+
+### Protected Information Includes
+
+- Aadhaar Number
+- Contact Number
+- Address
+- Employee Photograph
+
+### Acceptance Criteria
+
+- Access shall be role-controlled.
+- Sensitive information shall only be returned by APIs to authorized users.
+- Aadhaar Number shall be masked where full disclosure is unnecessary.
+- Sensitive employee information shall not be written into ordinary application logs.
+- Direct URL or API access shall not bypass authorization.
+- Employee photographs shall be stored and accessed securely.
+
+---
+
+## SEC-014 — Employee Profile Change Audit
+
+**Priority:** High
+
+Changes to important employee-profile information shall be auditable.
+
+### Audited Changes Include
+
+- Employee Code / ID
+- Employee Name
+- Contact Number
+- Aadhaar Number
+- Address
+- Employee Photograph replacement
+- Date of Joining
+- Date of Leaving
+- Employment Status
+- Station Assignment
+
+### Acceptance Criteria
+
+The audit record shall identify:
+
+- Employee
+- Changed Field or Activity
+- User Performing the Change
+- Date and Time
+- Previous Value, where appropriate and permitted
+- New Value, where appropriate and permitted
+
+Sensitive values such as Aadhaar Number shall not be unnecessarily reproduced in plain text within audit records.
 
 ---
 
@@ -5023,38 +5314,87 @@ Allow authorized administrators to configure nozzle points for each dispenser un
 
 ### Purpose
 
-Allow authorized administrators to create and maintain employee information.
+Allow authorized administrators to create, view and maintain complete employee profiles.
 
 ### Main Fields
 
-For the current BRD baseline, the screen shall support:
+#### Employee Identification
 
-- Employee Code
+- Employee Code / ID
 - Employee Name
-- Mobile Number
-- Email Address, where applicable
+- Employee Photograph
+
+#### Contact Information
+
+- Contact Number
+- Address
+
+#### Identity Information
+
+- Aadhaar Number
+
+#### Employment Information
+
+- Date of Joining
+- Date of Leaving, where applicable
+- Employment Status
+
+#### Operational Information
+
 - Assigned Station or Stations
-- Active Status
+- Current Nozzle Assignment, where applicable
+
+### Employment Status
+
+Supported statuses shall include:
+
+- ACTIVE
+- INACTIVE
+- LEFT
 
 ### Main Actions
 
 - Create Employee
 - View Employee
 - Edit Employee
+- Upload Employee Photograph
+- Replace Employee Photograph
 - Assign Station
+- View Current Nozzle Assignment
+- View Nozzle Assignment History
 - Activate Employee
 - Deactivate Employee
+- Mark Employee as Left
 - Search Employee
+
+### Search and Filter Options
+
+The screen should support appropriate filtering using:
+
+- Employee Code / ID
+- Employee Name
+- Contact Number
+- Station
+- Employment Status
+- Date of Joining
+- Date of Leaving
 
 ### Business Validation
 
-- Employee Code is mandatory.
-- Employee Code must be unique within the organization.
+- Employee Code / ID is mandatory.
+- Employee Code / ID must be unique within the organization.
 - Employee Name is mandatory.
-- An inactive employee cannot be assigned to a new shift.
-- Historical shift and reconciliation information shall remain unchanged.
-
-> **Client Review Note:** Additional employee-profile information requested during BRD review will be incorporated in the subsequent Employee Profile review update.
+- Date of Joining is mandatory.
+- Date of Leaving is optional for an ACTIVE employee.
+- Date of Leaving cannot be earlier than Date of Joining.
+- Date of Leaving is mandatory when Employment Status is LEFT.
+- An INACTIVE employee cannot participate in a new shift or receive a new nozzle assignment.
+- An employee marked LEFT cannot participate in a new shift or receive a new nozzle assignment.
+- Historical shift and reconciliation information shall remain unchanged when employment status changes.
+- Aadhaar Number shall be treated as sensitive information.
+- Full Aadhaar information shall only be displayed where the user is explicitly authorized.
+- Employee photographs shall only be accessible to authorized users.
+- Employment-status and sensitive-profile changes shall be audited.
 
 ---
 
@@ -6002,6 +6342,62 @@ Provide consolidated reconciliation for the complete shift.
 
 ---
 
+## 19.18 RPT-017 — Employee Details Report
+
+### Purpose
+
+Provide authorized users with employee master and employment information for operational and administrative review.
+
+### Filters
+
+The report shall support appropriate filters including:
+
+- Organization
+- Fuel Station
+- Employee Code / ID
+- Employee Name
+- Employment Status
+- Date of Joining Range
+- Date of Leaving Range
+
+### Report Information
+
+Subject to the user's access permissions, the report shall include:
+
+- Employee Code / ID
+- Employee Name
+- Contact Number
+- Address
+- Employee Photograph, where appropriate for the selected report format
+- Date of Joining
+- Date of Leaving
+- Employment Status
+- Assigned Station or Stations
+
+### Sensitive Information
+
+Aadhaar information shall not be included in ordinary employee reports unless explicitly required and the requesting user is appropriately authorized.
+
+Where Aadhaar information is permitted in a report, it should be masked unless the business purpose requires full authorized disclosure.
+
+### Report Formats
+
+Subject to final reporting implementation:
+
+- PDF
+- Excel
+
+### Acceptance Criteria
+
+- The report shall respect organization and station access restrictions.
+- ACTIVE, INACTIVE and LEFT employees shall be reportable.
+- Historical employees shall remain available after leaving the organization.
+- Date filters shall support historical employee reporting.
+- Sensitive information shall not be exposed to unauthorized users.
+- Report generation shall follow the common report security requirements.
+
+---
+
 ## 19.17 Common Report Requirements
 
 All reports shall:
@@ -6185,6 +6581,7 @@ Future enhancements shall be evaluated through a formal change request and estim
 | DEC-016 | Approval Remarks | Partially Confirmed | Confirm whether remarks are mandatory for matched cases |
 | DEC-017 | Retention Start Date | Pending Confirmation | Business date, closure date or approval date |
 | DEC-018 | Deployment Availability | Pending Confirmation | Confirm operating hours and availability target |
+| DEC-019 | Full Aadhaar Visibility | Pending Confirmation | Confirm which authorized roles may view the complete Aadhaar Number; other users shall receive masked or no Aadhaar information |
 
 Open decisions shall be reviewed before the relevant design or implementation is finalized.
 
@@ -6323,6 +6720,29 @@ The client completes User Acceptance Testing and formally approves the agreed te
 
 ---
 
+## AC-027 — Employee Profile Management
+
+Authorized administrators can create, view and maintain employee profiles containing:
+
+- Employee Code / ID
+- Employee Name
+- Contact Number
+- Aadhaar Number
+- Address
+- Employee Photograph
+- Date of Joining
+- Date of Leaving
+- Employment Status
+
+The system shall:
+
+- Protect sensitive employee information.
+- Prevent INACTIVE and LEFT employees from participating in new operational activities.
+- Preserve historical employee information.
+- Provide an authorized Employee Details Report.
+
+---
+
 # 26. Glossary
 
 | Term | Definition |
@@ -6356,6 +6776,11 @@ The client completes User Acceptance Testing and formally approves the agreed te
 | TID | Terminal ID used to identify a UPI or payment machine |
 | UPI | Unified Payments Interface |
 | VTOT | Accumulated fuel-volume total printed on the receipt |
+| Aadhaar Number | Employee identity information captured according to the client-approved business requirement and protected as sensitive personal information |
+| Date of Joining | Date on which an employee joined the organization |
+| Date of Leaving | Date on which an employee left the organization |
+| Employee Profile | Master record containing employee identification, contact, employment and authorized personal information |
+| Employment Status | Current employee state such as ACTIVE, INACTIVE or LEFT |
 
 ---
 
@@ -6441,6 +6866,8 @@ Difference > Allowed Tolerance
 | Level-2 Decision | Approve with remarks or reject and return |
 | Data Retention | Fourteen months |
 | Reconciliation Tolerance | Configurable; initial value pending |
+| Employee Profile | Maintain Employee ID, name, contact number, Aadhaar Number, address, photograph, Date of Joining, Date of Leaving and Employment Status |
+| Employee Reporting | Provide an Employee Details Report |
 
 ---
 
