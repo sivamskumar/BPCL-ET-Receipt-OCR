@@ -29,7 +29,7 @@
 | 0.4 | July 2026 | Sivakumar Mani | Business rules and quality requirements |
 | 0.5 | July 2026 | Sivakumar Mani | Workflows, screens and reports |
 | 1.0 Draft | July 2026 | Sivakumar Mani | Consolidated draft for client review |
-| 1.1 Draft | August 2026 | Sivakumar Mani | Client review updates - completed screen specifications, employee profile management, employee reporting, employee shift-hours tracking and consolidated Coins entry |
+| 1.1 Draft | August 2026 | Sivakumar Mani | Client review updates - completed screen specifications, employee profile management and reporting, employee shift-hours tracking, consolidated Coins entry and incoming fuel stock management |
 
 ---
 
@@ -3648,6 +3648,189 @@ The system shall allow authorized users to view employee shift-hour information.
 
 ---
 
+# 9.19 Incoming Fuel Stock Management
+
+## FR-130 — Record Incoming Fuel Stock
+
+**Module ID:** STK-001
+**Priority:** Critical
+**Primary Actors:** Administrator, Manager
+
+### Business Requirement
+
+The system shall allow authorized users to record incoming fuel stock received by a fuel station.
+
+Incoming fuel stock shall be maintained independently from employee shift reconciliation records.
+
+### Stock Information
+
+Each incoming fuel stock record shall include:
+
+- Fuel Station
+- Fuel Type
+- Invoice Number
+- Invoice Date
+- Received Date
+- Quantity Received
+- Remarks, where applicable
+- Created By
+- Created Date and Time
+
+### Initial Fuel Types
+
+The initial implementation shall support incoming stock for:
+
+- Petrol
+- Diesel
+
+### Acceptance Criteria
+
+- Fuel Station is mandatory.
+- Fuel Type is mandatory.
+- Invoice Number is mandatory.
+- Invoice Date is mandatory.
+- Received Date is mandatory.
+- Quantity Received is mandatory.
+- Quantity Received must be greater than zero.
+- Only active fuel stations shall accept new incoming stock records.
+- Only active fuel types shall be used for new incoming stock records.
+- The system shall identify the user who created the record.
+- Created Date and Time shall be recorded automatically.
+- Incoming stock shall be stored independently from shift reconciliation transactions.
+
+---
+
+## FR-131 — View Incoming Fuel Stock
+
+**Module ID:** STK-002
+**Priority:** High
+**Primary Actors:** Administrator, Manager, Authorized User
+
+### Business Requirement
+
+The system shall allow authorized users to view incoming fuel stock records.
+
+### Displayed Information
+
+- Fuel Station
+- Fuel Type
+- Invoice Number
+- Invoice Date
+- Received Date
+- Quantity Received
+- Remarks
+- Created By
+- Created Date and Time
+
+### Acceptance Criteria
+
+- Users shall only view stock records within their permitted organization and station scope.
+- Historical incoming stock records shall remain searchable according to the applicable retention policy.
+- Users shall be able to search using invoice and date information.
+- Petrol and Diesel stock records shall be distinguishable by Fuel Type.
+
+---
+
+## FR-132 — Search and Filter Incoming Fuel Stock
+
+**Module ID:** STK-003
+**Priority:** High
+
+### Business Requirement
+
+The system shall provide search and filtering capabilities for incoming fuel stock records.
+
+### Search and Filter Criteria
+
+The system shall support appropriate filters including:
+
+- Organization
+- Fuel Station
+- Fuel Type
+- Invoice Number
+- Invoice Date Range
+- Received Date Range
+
+### Acceptance Criteria
+
+- Multiple filters may be applied together where appropriate.
+- Search results shall respect user access restrictions.
+- Date-range searches shall include records within the selected period.
+- Clearing the filters shall restore the default permitted result set.
+
+---
+
+## FR-133 — Correct Incoming Fuel Stock
+
+**Module ID:** STK-004
+**Priority:** High
+**Primary Actors:** Administrator, Manager
+
+### Business Requirement
+
+The system shall allow authorized users to correct an incoming fuel stock record when incorrect information has been entered.
+
+### Correctable Information
+
+Subject to authorization and business rules, corrections may include:
+
+- Fuel Type
+- Invoice Number
+- Invoice Date
+- Received Date
+- Quantity Received
+- Remarks
+
+### Acceptance Criteria
+
+- Only authorized users shall modify an existing stock record.
+- A correction reason shall be mandatory for changes to a previously saved stock record after it has been finalized.
+- The original information shall remain traceable through audit history.
+- The system shall record the user performing the correction.
+- The correction date and time shall be recorded.
+- Quantity Received shall remain greater than zero.
+- A correction shall not silently modify unrelated shift-reconciliation information.
+
+---
+
+## FR-134 — Audit Incoming Fuel Stock Changes
+
+**Module ID:** STK-005
+**Priority:** High
+
+### Business Requirement
+
+The system shall maintain an audit history for important incoming fuel stock activities.
+
+### Audited Activities
+
+Audit information shall include activities such as:
+
+- Stock Record Creation
+- Stock Record Correction
+- Invoice Number Change
+- Invoice Date Change
+- Received Date Change
+- Fuel Type Change
+- Quantity Change
+
+### Acceptance Criteria
+
+The audit record shall identify:
+
+- Incoming Stock Record
+- Action
+- User
+- Date and Time
+- Changed Field, where applicable
+- Previous Value, where applicable
+- New Value, where applicable
+- Correction Reason, where applicable
+
+Audit records shall not be editable through normal application operations.
+
+---
+
 # 10 Business Rules
 
 ## BR-001
@@ -3851,6 +4034,42 @@ The employee shall enter the combined monetary value of all coins as one Coins a
 ## BR-033
 
 Employee Cash Total shall equal the sum of all calculated note-denomination amounts plus the consolidated Coins amount.
+
+---
+
+## BR-034
+
+Every incoming fuel stock record shall belong to a valid fuel station and fuel type.
+
+---
+
+## BR-035
+
+Invoice Number, Invoice Date, Received Date and Quantity Received shall be mandatory for an incoming fuel stock record.
+
+---
+
+## BR-036
+
+Incoming fuel Quantity Received shall be greater than zero.
+
+---
+
+## BR-037
+
+Incoming fuel stock shall be maintained independently from employee shift reconciliation transactions.
+
+---
+
+## BR-038
+
+Corrections to finalized incoming fuel stock records shall be authorized and auditable.
+
+---
+
+## BR-039
+
+Historical incoming fuel stock records shall not be physically deleted through normal application operations when they are required for reporting, audit or retention purposes.
 
 ---
 
@@ -4563,6 +4782,36 @@ Changes to completed employee shift-hour information shall be auditable.
 
 - Ordinary users shall not modify audit history.
 - Authorized corrections shall preserve the previous value.
+- Audit information shall be available to authorized administrators and auditors.
+
+---
+
+## SEC-016 — Incoming Fuel Stock Change Audit
+
+**Priority:** High
+
+Important changes to incoming fuel stock information shall be auditable.
+
+### Audited Information
+
+- Fuel Station
+- Fuel Type
+- Invoice Number
+- Invoice Date
+- Received Date
+- Quantity Received
+- Changed Field
+- Previous Value
+- New Value
+- Correction Reason
+- Changed By
+- Changed Date and Time
+
+### Acceptance Criteria
+
+- Only authorized users shall modify stock records.
+- Audit history shall not be editable through normal application operations.
+- Previous and corrected values shall remain traceable.
 - Audit information shall be available to authorized administrators and auditors.
 
 ---
@@ -5294,6 +5543,7 @@ Reports Available
 | SCR-031 | Audit History | Auditor, Administrator |
 | SCR-032 | Application Configuration | Administrator |
 | SCR-033 | User and Role Management | Administrator |
+| SCR-034 | Incoming Fuel Stock Management | Administrator, Manager |
 
 ---
 
@@ -6375,6 +6625,73 @@ Allow authorized administrators to maintain application users, access roles and 
 
 ---
 
+## 18.35 SCR-034 — Incoming Fuel Stock Management
+
+### Purpose
+
+Allow authorized users to record, view, search and maintain incoming Petrol and Diesel stock received by a fuel station.
+
+### Main Fields
+
+- Fuel Station
+- Fuel Type
+- Invoice Number
+- Invoice Date
+- Received Date
+- Quantity Received
+- Remarks
+
+### System-Generated Information
+
+- Created By
+- Created Date and Time
+- Last Updated By, where applicable
+- Last Updated Date and Time, where applicable
+
+### Fuel Type
+
+The initial supported fuel types shall include:
+
+- Petrol
+- Diesel
+
+### Main Actions
+
+- Add Incoming Stock
+- Save Stock Record
+- View Stock Record
+- Search Stock Records
+- Filter Stock Records
+- Correct Stock Record, where authorized
+- View Audit History
+- Open Incoming Fuel Stock Report
+
+### Search and Filter Options
+
+The screen shall support appropriate filtering using:
+
+- Fuel Station
+- Fuel Type
+- Invoice Number
+- Invoice Date Range
+- Received Date Range
+
+### Business Validation
+
+- Fuel Station is mandatory.
+- Fuel Type is mandatory.
+- Invoice Number is mandatory.
+- Invoice Date is mandatory.
+- Received Date is mandatory.
+- Quantity Received is mandatory and must be greater than zero.
+- Only active stations shall accept new stock records.
+- Only active fuel types shall be used.
+- Corrections to finalized records shall require authorization.
+- Correction reason shall be mandatory where required by the applicable business rule.
+- Incoming stock records shall remain independent from employee shift reconciliation records.
+
+---
+
 # 19. Report Specifications
 
 ## 19.1 Report Catalogue
@@ -6396,6 +6713,7 @@ Allow authorized administrators to maintain application users, access roles and 
 | RPT-013 | Approval History Report |
 | RPT-014 | Audit Report |
 | RPT-015 | Shift Status Report |
+| RPT-016 | Incoming Fuel Stock Report |
 | RPT-017 | Employee Details Report |
 | RPT-018 | Employee Shift Hours Report |
 
@@ -6696,6 +7014,20 @@ For Coins:
 
 ---
 
+## 19.17 Common Report Requirements
+
+All reports shall:
+
+- Respect user role and station access.
+- Support appropriate date and station filters.
+- Display generation date and time.
+- Display the user who generated the report.
+- Use consistent monetary and quantity formatting.
+- Support PDF or Excel where approved.
+- Avoid exposing sensitive information to unauthorized users.
+
+---
+
 ## 19.18 RPT-017 — Employee Details Report
 
 ### Purpose
@@ -6811,17 +7143,60 @@ Subject to final reporting implementation:
 
 ---
 
-## 19.17 Common Report Requirements
+## 19.20 RPT-016 — Incoming Fuel Stock Report
 
-All reports shall:
+### Purpose
 
-- Respect user role and station access.
-- Support appropriate date and station filters.
-- Display generation date and time.
-- Display the user who generated the report.
-- Use consistent monetary and quantity formatting.
-- Support PDF or Excel where approved.
-- Avoid exposing sensitive information to unauthorized users.
+Provide authorized users with incoming Petrol and Diesel stock information for a selected station and reporting period.
+
+### Filters
+
+The report shall support appropriate filters including:
+
+- Organization
+- Fuel Station
+- Fuel Type
+- Invoice Number
+- Invoice Date Range
+- Received Date Range
+
+### Report Information
+
+The report shall include:
+
+- Fuel Station
+- Fuel Type
+- Invoice Number
+- Invoice Date
+- Received Date
+- Quantity Received
+- Remarks, where applicable
+- Created By
+- Created Date and Time
+
+### Summary Information
+
+Where appropriate, the report shall provide:
+
+- Total Petrol Quantity Received
+- Total Diesel Quantity Received
+- Total Quantity Received
+
+### Report Formats
+
+Subject to final reporting implementation:
+
+- PDF
+- Excel
+
+### Acceptance Criteria
+
+- The report shall respect organization and station access restrictions.
+- Petrol and Diesel stock shall be separately identifiable.
+- Date-range filtering shall be supported.
+- Invoice Number searching shall be supported.
+- Quantity totals shall be calculated from the filtered result set.
+- Historical stock records shall remain available according to the applicable retention policy.
 
 ---
 
@@ -6995,6 +7370,7 @@ Future enhancements shall be evaluated through a formal change request and estim
 | DEC-017 | Retention Start Date | Pending Confirmation | Business date, closure date or approval date |
 | DEC-018 | Deployment Availability | Pending Confirmation | Confirm operating hours and availability target |
 | DEC-019 | Full Aadhaar Visibility | Pending Confirmation | Confirm which authorized roles may view the complete Aadhaar Number; other users shall receive masked or no Aadhaar information |
+| DEC-020 | Incoming Stock Additional Details | Pending Confirmation | Confirm whether Supplier, Invoice Amount, tanker/delivery reference or other delivery information shall also be maintained |
 
 Open decisions shall be reviewed before the relevant design or implementation is finalized.
 
@@ -7195,6 +7571,28 @@ The system shall:
 
 ---
 
+## AC-030 — Incoming Fuel Stock Management
+
+Authorized users can record and maintain incoming Petrol and Diesel stock independently from employee shift reconciliation.
+
+The system shall:
+
+- Record Fuel Station.
+- Record Fuel Type.
+- Record Invoice Number.
+- Record Invoice Date.
+- Record Received Date.
+- Record Quantity Received.
+- Record Remarks, where applicable.
+- Identify the user creating the record.
+- Preserve creation date and time.
+- Allow authorized searching and filtering.
+- Allow authorized corrections with audit history.
+- Provide an Incoming Fuel Stock Report.
+- Provide Petrol and Diesel quantity totals for the selected report period.
+
+---
+
 # 26. Glossary
 
 | Term | Definition |
@@ -7238,6 +7636,11 @@ The system shall:
 | Employee Shift Start | Date and time at which an employee begins the recorded working period |
 | Employee Shift End | Date and time at which an employee completes the recorded working period |
 | Employee Shift Hours | Calculated working duration between the employee's recorded shift start and end date/time |
+| Incoming Fuel Stock | Petrol or Diesel quantity received by a fuel station and recorded independently from shift reconciliation |
+| Invoice Number | Business document reference associated with an incoming fuel stock delivery |
+| Invoice Date | Date shown on the invoice associated with the incoming fuel stock |
+| Received Date | Date on which the fuel station received the incoming fuel stock |
+| Quantity Received | Quantity of fuel received through an incoming fuel stock transaction |
 
 ---
 
@@ -7343,6 +7746,8 @@ Difference > Allowed Tolerance
 | Employee Shift Hours | Maintain employee-specific shift start time, end time and calculated working duration |
 | Employee Shift Reporting | Provide an Employee Shift Hours Report |
 | Cash Denomination Entry | Maintain quantity-based entry for ₹500, ₹200, ₹100, ₹50, ₹20 and ₹10 notes; record all coins as one consolidated Coins amount |
+| Incoming Fuel Stock | Maintain Petrol and Diesel stock receipts as separate business records with Invoice Number, Invoice Date, Received Date and Quantity Received |
+| Incoming Fuel Stock Reporting | Provide a separate Incoming Fuel Stock Report |
 
 ---
 
