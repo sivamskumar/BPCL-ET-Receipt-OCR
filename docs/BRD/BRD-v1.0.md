@@ -29,6 +29,7 @@
 | 0.4 | July 2026 | Sivakumar Mani | Business rules and quality requirements |
 | 0.5 | July 2026 | Sivakumar Mani | Workflows, screens and reports |
 | 1.0 Draft | July 2026 | Sivakumar Mani | Consolidated draft for client review |
+| 1.1 Draft | August 2026 | Sivakumar Mani | Client review update - completed missing screen specifications |
 
 ---
 
@@ -4837,7 +4838,332 @@ Display reconciliations awaiting Level-2 approval.
 
 ---
 
-## 18.6 SCR-014 — Open Shift
+## 18.6 SCR-005 — Administration Dashboard
+
+### Purpose
+
+Provide administrators with a consolidated view of system configuration, master data and administrative activities.
+
+### Information
+
+The dashboard should display:
+
+- Number of Active Organizations
+- Number of Active Fuel Stations
+- Number of Active Dispenser Units
+- Number of Active Nozzles
+- Number of Active Employees
+- Number of Active Users
+- Pending Configuration Activities
+- Configuration Warnings
+- Recent Administrative Changes
+- System Configuration Summary
+
+### Main Actions
+
+- Manage Organizations
+- Manage Fuel Stations
+- Manage Dispenser Units
+- Manage Nozzles
+- Manage Employees
+- Manage Nozzle Assignments
+- Manage Fuel Types
+- Manage Fuel Prices
+- Manage Users and Roles
+- Manage Application Configuration
+- View Audit History
+
+### Business Validation
+
+- Only authorized administrators shall access the Administration Dashboard.
+- Information shall be restricted to the administrator's permitted organization scope.
+- Administrative actions shall be recorded in the audit history where applicable.
+
+---
+
+## 18.7 SCR-006 — Organization Management
+
+### Purpose
+
+Allow authorized administrators to create and maintain organization information.
+
+### Main Fields
+
+- Organization Code
+- Organization Name
+- Address
+- Contact Details
+- Active Status
+
+### Main Actions
+
+- Create Organization
+- View Organization
+- Edit Organization
+- Activate Organization
+- Deactivate Organization
+- Search Organization
+
+### Business Validation
+
+- Organization Code is mandatory.
+- Organization Code must be unique.
+- Organization Name is mandatory.
+- An organization with historical business data shall not be physically deleted.
+- Deactivation shall not alter historical records.
+
+---
+
+## 18.8 SCR-007 — Fuel Station Management
+
+### Purpose
+
+Allow authorized administrators to create and maintain fuel-station information.
+
+### Main Fields
+
+- Organization
+- Station Code
+- Station Name
+- Address
+- Contact Details
+- Time Zone
+- Active Status
+
+### Main Actions
+
+- Create Fuel Station
+- View Fuel Station
+- Edit Fuel Station
+- Activate Fuel Station
+- Deactivate Fuel Station
+- Search and Filter Stations
+
+### Business Validation
+
+- Organization is mandatory.
+- Station Code is mandatory.
+- Station Code must be unique within the organization.
+- Station Name is mandatory.
+- Only active stations may be used for new operational shifts.
+- Historical shift data shall remain unchanged when a station is deactivated.
+
+---
+
+## 18.9 SCR-008 — Dispenser Unit Management
+
+### Purpose
+
+Allow authorized administrators to register and maintain dispenser units associated with a fuel station.
+
+### Main Fields
+
+- Fuel Station
+- DU Serial Number
+- Display Name
+- Manufacturer
+- Model
+- Active Status
+
+### Main Actions
+
+- Register Dispenser Unit
+- View Dispenser Unit
+- Edit Dispenser Unit
+- Activate Dispenser Unit
+- Deactivate Dispenser Unit
+- Search by DU Serial Number
+
+### Business Validation
+
+- Fuel Station is mandatory.
+- DU Serial Number is mandatory.
+- Normalized DU Serial Number must be unique.
+- Only active dispenser units may be used for new shifts.
+- Historical receipt and shift records shall remain unchanged after deactivation.
+
+---
+
+## 18.10 SCR-009 — Nozzle Management
+
+### Purpose
+
+Allow authorized administrators to configure nozzle points for each dispenser unit.
+
+### Main Fields
+
+- Fuel Station
+- Dispenser Unit
+- Nozzle Number
+- Fuel Type
+- Display Name, where required
+- Active Status
+
+### Main Actions
+
+- Add Nozzle
+- View Nozzle
+- Edit Nozzle
+- Activate Nozzle
+- Deactivate Nozzle
+- View Current Employee Assignment
+
+### Business Validation
+
+- Dispenser Unit is mandatory.
+- Nozzle Number is mandatory and must be positive.
+- Nozzle Number must be unique within the dispenser unit.
+- Fuel Type is mandatory.
+- An inactive nozzle shall not participate in a new shift.
+- Historical nozzle readings and assignments shall remain available.
+
+---
+
+## 18.11 SCR-010 — Employee Management
+
+### Purpose
+
+Allow authorized administrators to create and maintain employee information.
+
+### Main Fields
+
+For the current BRD baseline, the screen shall support:
+
+- Employee Code
+- Employee Name
+- Mobile Number
+- Email Address, where applicable
+- Assigned Station or Stations
+- Active Status
+
+### Main Actions
+
+- Create Employee
+- View Employee
+- Edit Employee
+- Assign Station
+- Activate Employee
+- Deactivate Employee
+- Search Employee
+
+### Business Validation
+
+- Employee Code is mandatory.
+- Employee Code must be unique within the organization.
+- Employee Name is mandatory.
+- An inactive employee cannot be assigned to a new shift.
+- Historical shift and reconciliation information shall remain unchanged.
+
+> **Client Review Note:** Additional employee-profile information requested during BRD review will be incorporated in the subsequent Employee Profile review update.
+
+---
+
+## 18.12 SCR-011 — Nozzle Assignment
+
+### Purpose
+
+Allow authorized administrators to assign nozzles to employees for defined operational periods.
+
+### Main Fields
+
+- Fuel Station
+- Dispenser Unit
+- Nozzle
+- Fuel Type
+- Employee
+- Effective From Date
+- Effective To Date, where applicable
+- Assignment Status
+
+### Main Actions
+
+- Create Assignment
+- View Current Assignment
+- View Assignment History
+- End Assignment
+- Create New Assignment
+
+### Business Validation
+
+- Employee must be active.
+- Nozzle must be active.
+- Effective From Date is mandatory.
+- Effective To Date cannot precede Effective From Date.
+- One nozzle shall not be assigned to more than one employee for an overlapping effective period.
+- Historical nozzle assignments shall remain available.
+
+---
+
+## 18.13 SCR-012 — Fuel Type Management
+
+### Purpose
+
+Allow authorized administrators to maintain fuel types supported by the application.
+
+### Initial Fuel Types
+
+- Petrol
+- Diesel
+
+### Main Fields
+
+- Fuel Type Code
+- Fuel Type Name
+- Active Status
+
+### Main Actions
+
+- Create Fuel Type
+- View Fuel Type
+- Edit Fuel Type
+- Activate Fuel Type
+- Deactivate Fuel Type
+
+### Business Validation
+
+- Fuel Type Code is mandatory.
+- Fuel Type Code must be unique.
+- Fuel Type Name is mandatory.
+- An inactive fuel type shall not be assigned to a new nozzle.
+- Historical fuel-sales information shall remain unchanged.
+
+---
+
+## 18.14 SCR-013 — Fuel Price Management
+
+### Purpose
+
+Allow authorized administrators and managers to maintain effective fuel prices for each station and fuel type.
+
+### Main Fields
+
+- Fuel Station
+- Fuel Type
+- Price Per Litre
+- Effective From Date and Time
+- Effective To Date and Time, where applicable
+- Active Status
+
+### Main Actions
+
+- Add Fuel Price
+- View Current Price
+- View Price History
+- Update Future Price
+- Search by Station, Fuel Type and Effective Date
+
+### Business Validation
+
+- Fuel Station is mandatory.
+- Fuel Type is mandatory.
+- Price Per Litre must be greater than zero.
+- Effective From Date and Time are mandatory.
+- Overlapping effective price periods for the same station and fuel type shall not be allowed.
+- Fuel prices already used in completed reconciliations shall not be silently modified.
+
+---
+
+## 18.15 SCR-014 — Open Shift
 
 ### Purpose
 
@@ -4863,7 +5189,59 @@ Allow an employee to open a new operational shift.
 
 ---
 
-## 18.7 SCR-016 and SCR-017 — Receipt Upload
+## 18.16 SCR-015 — Shift Details
+
+### Purpose
+
+Provide authorized users with a consolidated view of an operational shift and its current processing status.
+
+### Displayed Information
+
+- Organization
+- Fuel Station
+- Dispenser Unit
+- DU Serial Number
+- Business Date
+- Shift Number
+- Shift Start Date and Time
+- Shift End Date and Time, where available
+- Participating Employees
+- Nozzle Assignments
+- Start Receipt Status
+- End Receipt Status
+- Receipt Processing Status
+- Fuel-Sales Calculation Status
+- Collection Entry Status
+- Reconciliation Status
+- Approval Status
+- Current Shift Status
+- Remarks
+
+### Main Actions
+
+Actions shall depend on user role and current shift status and may include:
+
+- Continue Shift
+- View Start Receipt
+- View End Receipt
+- View Fuel-Sales Calculation
+- View Collections
+- View Reconciliation
+- View Approval History
+- View Audit History
+- Cancel Shift, where authorized
+- Close Approved Shift, where authorized
+
+### Business Validation
+
+- Users shall only view shifts within their permitted station scope.
+- Available actions shall depend on current shift status.
+- Closed or cancelled shifts shall be read-only during normal operation.
+- Historical assignments used by the shift shall be displayed from the shift snapshot.
+
+---
+
+## 18.17 SCR-016 and SCR-017 — Receipt Upload
 
 ### Purpose
 
@@ -4889,7 +5267,7 @@ Allow the employee to upload Start or End Reading Receipts.
 
 ---
 
-## 18.8 SCR-018 — Receipt Review
+## 18.19 SCR-018 — Receipt Review
 
 ### Purpose
 
@@ -4921,7 +5299,7 @@ The screen should display:
 
 ---
 
-## 18.9 SCR-019 — Fuel Sales Calculation
+## 18.20 SCR-019 — Fuel Sales Calculation
 
 ### Purpose
 
@@ -4944,7 +5322,7 @@ Display nozzle-wise and employee-wise sales calculations.
 
 ---
 
-## 18.10 SCR-020 — Cash Denomination Entry
+## 18.21 SCR-020 — Cash Denomination Entry
 
 ### Purpose
 
@@ -4975,7 +5353,7 @@ Allow an employee to enter physical cash held.
 
 ---
 
-## 18.11 SCR-021 — UPI Terminal Entry
+## 18.22 SCR-021 — UPI Terminal Entry
 
 ### Purpose
 
@@ -5002,7 +5380,7 @@ Allow an employee to enter UPI collections by terminal.
 
 ---
 
-## 18.12 SCR-022 — Card Collection Entry
+## 18.23 SCR-022 — Card Collection Entry
 
 ### Main Fields
 
@@ -5017,7 +5395,7 @@ Allow an employee to enter UPI collections by terminal.
 
 ---
 
-## 18.13 SCR-023 — Credit Sale Entry
+## 18.24 SCR-023 — Credit Sale Entry
 
 ### Main Fields
 
@@ -5033,7 +5411,7 @@ Allow an employee to enter UPI collections by terminal.
 
 ---
 
-## 18.14 SCR-024 — Expense and Adjustment Entry
+## 18.25 SCR-024 — Expense and Adjustment Entry
 
 ### Main Fields
 
@@ -5056,7 +5434,7 @@ Allow an employee to enter UPI collections by terminal.
 
 ---
 
-## 18.15 SCR-025 — Employee Reconciliation
+## 18.26 SCR-025 — Employee Reconciliation
 
 ### Displayed Information
 
@@ -5083,7 +5461,7 @@ Allow an employee to enter UPI collections by terminal.
 
 ---
 
-## 18.16 SCR-026 — Shift Reconciliation
+## 18.27 SCR-026 — Shift Reconciliation
 
 ### Displayed Information
 
@@ -5103,7 +5481,7 @@ Allow an employee to enter UPI collections by terminal.
 
 ---
 
-## 18.17 SCR-027 — Level-1 Review
+## 18.28 SCR-027 — Level-1 Review
 
 ### Main Review Areas
 
@@ -5130,7 +5508,7 @@ Allow an employee to enter UPI collections by terminal.
 
 ---
 
-## 18.18 SCR-028 — Level-2 Approval
+## 18.29 SCR-028 — Level-2 Approval
 
 ### Main Review Areas
 
@@ -5149,7 +5527,7 @@ Allow an employee to enter UPI collections by terminal.
 
 ---
 
-## 18.19 SCR-029 — Approval History
+## 18.30 SCR-029 — Approval History
 
 ### Displayed Information
 
@@ -5164,7 +5542,107 @@ Allow an employee to enter UPI collections by terminal.
 
 ---
 
-## 18.20 SCR-032 — Application Configuration
+## 18.31 SCR-030 — Reports
+
+### Purpose
+
+Provide authorized users with access to approved operational, reconciliation and audit reports.
+
+### Report Categories
+
+The screen shall provide access to reports including:
+
+- Employee Shift Reconciliation Report
+- Shift Reconciliation Report
+- Station Daily Sales Summary
+- Fuel-Type Sales Summary
+- Shortage and Excess Report
+- Cash Denomination Summary
+- UPI Terminal Collection Report
+- Card Collection Report
+- Credit Sales Report
+- Expense and Adjustment Report
+- Receipt Processing Report
+- Manual Correction Report
+- Approval History Report
+- Audit Report
+- Shift Status Report
+
+### Common Filters
+
+Filters may include:
+
+- Organization
+- Fuel Station
+- Dispenser Unit
+- Employee
+- Business Date
+- Date Range
+- Shift Status
+- Reconciliation Status
+
+### Main Actions
+
+- Select Report
+- Apply Filters
+- View Report
+- Export PDF
+- Export Excel
+- Clear Filters
+
+### Business Validation
+
+- Reports shall respect user role and station-access restrictions.
+- Only permitted data shall be displayed.
+- Generated reports shall use consistent date, quantity and monetary formats.
+
+---
+
+## 18.32 SCR-031 — Audit History
+
+### Purpose
+
+Allow authorized auditors and administrators to review important business and system activities.
+
+### Displayed Information
+
+- Date and Time
+- User
+- Action
+- Entity Type
+- Entity Identifier
+- Previous Value, where applicable
+- New Value, where applicable
+- Remarks or Reason
+- Source Information, where available
+
+### Filters
+
+- Date Range
+- User
+- Organization
+- Station
+- Action
+- Entity Type
+- Entity Identifier
+
+### Main Actions
+
+- Search
+- Filter
+- View Audit Details
+- Export Audit Report, where authorized
+
+### Business Validation
+
+- Audit records shall be read-only.
+- Ordinary users shall not modify or delete audit history.
+- Access shall be restricted to authorized roles.
+- Sensitive information shall not be unnecessarily exposed in audit displays.
+
+---
+
+## 18.33 SCR-032 — Application Configuration
 
 ### Configurable Items
 
@@ -5176,6 +5654,56 @@ Allow an employee to enter UPI collections by terminal.
 - Data Retention Period
 - Cash Denominations
 - Other approved operational settings
+
+---
+
+## 18.34 SCR-033 — User and Role Management
+
+### Purpose
+
+Allow authorized administrators to maintain application users, access roles and permitted station access.
+
+### Main Fields
+
+- Username
+- Display Name
+- Linked Employee, where applicable
+- Organization
+- Assigned Role or Roles
+- Assigned Station or Stations
+- Active Status
+- Account Lock Status
+- Password Change Required
+
+### Initial Roles
+
+- Employee
+- Reviewer
+- Approver
+- Administrator
+- Auditor
+
+### Main Actions
+
+- Create User
+- View User
+- Edit User
+- Assign Role
+- Assign Station Access
+- Activate User
+- Deactivate User
+- Lock or Unlock User
+- Initiate Password Reset
+
+### Business Validation
+
+- Username is mandatory.
+- Username must be unique within the organization.
+- Passwords shall never be displayed in plain text.
+- An inactive user cannot log in.
+- Employee users may be associated with the corresponding Employee master record.
+- Role and station-access changes shall be audited.
+- Approval segregation rules shall remain enforced.
 
 ---
 
