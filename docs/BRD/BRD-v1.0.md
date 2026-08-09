@@ -29,7 +29,7 @@
 | 0.4 | July 2026 | Sivakumar Mani | Business rules and quality requirements |
 | 0.5 | July 2026 | Sivakumar Mani | Workflows, screens and reports |
 | 1.0 Draft | July 2026 | Sivakumar Mani | Consolidated draft for client review |
-| 1.1 Draft | August 2026 | Sivakumar Mani | Client review updates - completed screen specifications, employee profile management, employee reporting and employee shift-hours tracking |
+| 1.1 Draft | August 2026 | Sivakumar Mani | Client review updates - completed screen specifications, employee profile management, employee reporting, employee shift-hours tracking and consolidated Coins entry |
 
 ---
 
@@ -2122,9 +2122,9 @@ The system shall display the values used in fuel-sales calculations.
 
 ### Business Requirement
 
-The system shall allow authorized administrators to maintain the currency denominations available for cash collection entry.
+The system shall support the approved cash denominations used for employee cash collection entry.
 
-### Initial Denominations
+### Initial Note Denominations
 
 - ₹500
 - ₹200
@@ -2132,20 +2132,24 @@ The system shall allow authorized administrators to maintain the currency denomi
 - ₹50
 - ₹20
 - ₹10
-- ₹5
-- ₹2
-- ₹1
+
+### Coins
+
+Individual ₹5, ₹2 and ₹1 coin denominations shall not be entered separately.
+
+The employee shall instead enter the combined monetary value of all coins as a single **Coins** amount.
 
 ### Acceptance Criteria
 
-- Denomination value must be greater than zero.
-- Duplicate denomination values shall not be allowed for the same currency.
-- Denominations may be activated or deactivated.
-- Historical denomination entries shall remain unchanged.
+- Supported note denominations may be activated or deactivated by an authorized administrator where configuration is permitted.
+- Duplicate note-denomination values shall not be allowed for the same currency.
+- Historical cash entries shall remain unchanged when denomination configuration changes.
+- ₹5, ₹2 and ₹1 shall not appear as separate cash-entry rows in the initial configuration.
+- A single Coins entry shall be available for recording the total monetary value of coins.
 
 ---
 
-## FR-077 — Enter Cash Denomination Counts
+## FR-077 — Enter Cash Denomination Details
 
 **Module ID:** PAY-002  
 **Priority:** Critical  
@@ -2153,7 +2157,7 @@ The system shall allow authorized administrators to maintain the currency denomi
 
 ### Business Requirement
 
-The system shall allow an employee to enter the quantity held for each supported cash denomination.
+The system shall allow an employee to enter physical cash held for reconciliation using note-denomination quantities and a consolidated Coins amount.
 
 ### Preconditions
 
@@ -2162,38 +2166,74 @@ The system shall allow an employee to enter the quantity held for each supported
 - Fuel-sales calculation is complete.
 - The employee participates in the shift.
 
-### Acceptance Criteria
+### Note Entry
 
-- Quantity shall accept non-negative whole numbers only.
+For each supported note denomination, the employee shall enter the number of notes held.
+
+Example:
+
+```text
+₹500 → Quantity
+₹200 → Quantity
+₹100 → Quantity
+₹50  → Quantity
+₹20  → Quantity
+₹10  → Quantity
+```
+
+### Coins Entry
+
+The employee shall enter the combined monetary value of all coins as one amount.
+
+Example:
+
+```text
+Coins → ₹37.00
+```
+
+The employee shall not be required to separately enter the quantities of ₹5, ₹2 or ₹1 coins.
+
+### Acceptance Criteria
+- Note quantities shall accept non-negative whole numbers only.
+- Coins shall accept a non-negative monetary amount.
+- Separate ₹5, ₹2 and ₹1 coin quantities shall not be required.
 - The employee shall only enter collections for their own reconciliation unless otherwise authorized.
 - Existing entries may be updated before submission.
-- Entered values shall be saved against the shift and employee.
+- Entered values shall be saved against the correct employee and shift.
 
 ---
 
-## FR-078 — Calculate Cash Denomination Amount
+## FR-078 — Calculate Cash Denomination and Coins Amount
 
 **Module ID:** PAY-003  
 **Priority:** Critical
 
 ### Business Requirement
 
-The system shall calculate the amount for each denomination.
+The system shall calculate the amount represented by each note denomination and include the directly entered Coins amount.
 
-### Calculation
+### Note Calculation
+
+For note denominations:
 
 ```text
-Denomination Amount =
+Note Denomination Amount =
     Denomination Value
-  × Quantity
+  × Note Quantity
 ```
+
+### Coins
+
+The Coins amount shall be entered directly by the employee and shall not require denomination-based quantity calculation.
 
 ### Acceptance Criteria
 
-- The backend shall perform the calculation.
+- The backend shall calculate each note-denomination amount.
 - Browser-calculated values shall not be treated as authoritative.
-- The calculated amount shall update when quantity changes.
-- Negative quantities shall not be accepted.
+- A note-denomination amount shall update whenever its quantity changes.
+- Negative note quantities shall not be accepted.
+- Negative Coins amounts shall not be accepted.
+- The Coins amount shall participate directly in the Employee Cash Total
 
 ---
 
@@ -2204,20 +2244,36 @@ Denomination Amount =
 
 ### Business Requirement
 
-The system shall calculate the total physical cash entered by an employee.
+The system shall calculate the total physical cash recorded by an employee.
 
 ### Calculation
 
 ```text
 Cash Total =
-    Sum of all Denomination Amounts
+    Sum of all Note Denomination Amounts
+  + Coins Amount
+```
+
+Example:
+
+```text
+₹500 × 4 = ₹2,000
+₹200 × 3 = ₹600
+₹100 × 2 = ₹200
+₹50  × 1 = ₹50
+₹20  × 2 = ₹40
+₹10  × 3 = ₹30
+Coins     = ₹37
+-----------------
+Cash Total = ₹2,957
 ```
 
 ### Acceptance Criteria
 
-- The total shall equal the sum of all denomination rows.
-- The total shall be recalculated whenever a denomination count changes.
-- The cash total shall be included in employee reconciliation.
+- Cash Total shall equal the sum of all calculated note-denomination amounts plus the Coins amount.
+- Cash Total shall be recalculated whenever a note quantity or Coins amount changes.
+- The backend-calculated Cash Total shall be authoritative.
+- Cash Total shall be included in employee reconciliation.
 
 ---
 
@@ -3771,6 +3827,30 @@ Changes to completed employee shift start or end times shall require authorizati
 ## BR-029
 
 Historical employee shift-hour records shall remain available even if the employee later becomes INACTIVE or LEFT.
+
+---
+
+## BR-030
+
+Physical cash notes shall be recorded using denomination-wise quantities for the supported note denominations.
+
+---
+
+## BR-031
+
+₹5, ₹2 and ₹1 coins shall not require separate denomination-wise entry.
+
+---
+
+## BR-032
+
+The employee shall enter the combined monetary value of all coins as one Coins amount.
+
+---
+
+## BR-033
+
+Employee Cash Total shall equal the sum of all calculated note-denomination amounts plus the consolidated Coins amount.
 
 ---
 
@@ -5872,9 +5952,11 @@ Display nozzle-wise and employee-wise sales calculations.
 
 ### Purpose
 
-Allow an employee to enter physical cash held.
+Allow an employee to record physical cash held for shift reconciliation.
 
-### Initial Denominations
+### Note Denominations
+
+The initial supported note denominations shall be:
 
 - ₹500
 - ₹200
@@ -5882,20 +5964,60 @@ Allow an employee to enter physical cash held.
 - ₹50
 - ₹20
 - ₹10
-- ₹5
-- ₹2
-- ₹1
 
-### Columns
+### Note Entry Columns
+
+For each note denomination, display:
 
 - Denomination
 - Quantity
 - Calculated Amount
 
+### Coins Entry
+
+A separate **Coins** row shall be provided.
+
+The Coins row shall contain:
+
+- Description: Coins
+- Total Coins Amount
+
+The Coins row shall not require individual ₹5, ₹2 or ₹1 quantities.
+
+### Example
+
+| Cash Type | Quantity | Amount |
+|---|---:|---:|
+| ₹500 | 4 | ₹2,000 |
+| ₹200 | 3 | ₹600 |
+| ₹100 | 2 | ₹200 |
+| ₹50 | 1 | ₹50 |
+| ₹20 | 2 | ₹40 |
+| ₹10 | 3 | ₹30 |
+| Coins | Not Applicable | ₹37 |
+
 ### Summary
 
-- Total Number of Notes and Coins
+- Total Number of Notes
+- Total Notes Amount
+- Coins Amount
 - Cash Total
+
+### Main Actions
+
+- Enter Note Quantities
+- Enter Coins Amount
+- Save Draft
+- Update Entry
+- Complete Cash Entry
+
+### Business Validation
+
+- Note quantities shall accept non-negative whole numbers only.
+- Coins shall accept a non-negative monetary amount.
+- Individual ₹5, ₹2 and ₹1 coin entries shall not be required.
+- Cash Total shall be calculated by the backend.
+- Entries shall belong to the correct employee and shift.
 
 ---
 
@@ -6394,14 +6516,38 @@ Provide consolidated reconciliation for the complete shift.
 
 ## 19.7 RPT-006 — Cash Denomination Summary
 
+### Purpose
+
+Provide a summary of physical cash entered by an employee for a shift.
+
 ### Information
+
+For note denominations:
 
 - Shift
 - Employee
-- Denomination
+- Note Denomination
 - Quantity
 - Calculated Amount
+
+For Coins:
+
+- Shift
+- Employee
+- Coins Amount
+
+### Summary Information
+
+- Total Number of Notes
+- Total Notes Amount
+- Coins Amount
 - Cash Total
+
+### Business Rules
+
+- ₹5, ₹2 and ₹1 shall not be reported as separate denomination entries.
+- Coins shall be displayed as one consolidated monetary amount.
+- Cash Total shall equal Total Notes Amount plus Coins Amount.
 
 ---
 
@@ -7027,6 +7173,28 @@ The system shall:
 
 ---
 
+## AC-029 — Cash Denomination and Coins Entry
+
+The system shall allow employees to record physical cash using:
+
+- Quantity-based entry for ₹500 notes
+- Quantity-based entry for ₹200 notes
+- Quantity-based entry for ₹100 notes
+- Quantity-based entry for ₹50 notes
+- Quantity-based entry for ₹20 notes
+- Quantity-based entry for ₹10 notes
+- One consolidated Coins amount
+
+The system shall:
+
+- Calculate note-denomination amounts automatically.
+- Accept the Coins amount directly.
+- Not require separate ₹5, ₹2 or ₹1 coin quantities.
+- Calculate Cash Total as Total Notes Amount plus Coins Amount.
+- Include the resulting Cash Total in employee reconciliation.
+
+---
+
 # 26. Glossary
 
 | Term | Definition |
@@ -7037,7 +7205,8 @@ The system shall:
 | ATOT | Accumulated monetary total printed on the dispenser receipt |
 | BRD | Business Requirements Document |
 | Business Date | Operational date associated with a shift |
-| Cash Denomination | Currency-note or coin value used to calculate physical cash |
+| Cash Denomination | Supported currency-note value for which the employee enters a quantity during physical cash collection |
+| Coins Amount | Consolidated monetary value of all coins held by the employee, entered without separate ₹5, ₹2 or ₹1 denomination quantities |
 | Credit Sale | Fuel sale for which payment is not received immediately |
 | Dispenser Unit | Fuel-dispensing unit identified by a DU Serial Number |
 | DU | Dispenser Unit |
@@ -7100,12 +7269,27 @@ Calculated Sales Amount =
   × Effective Price Per Litre
 ```
 
-### Cash Denomination
+### Cash Notes
 
 ```text
-Denomination Amount =
+Note Denomination Amount =
     Denomination Value
-  × Quantity
+  × Note Quantity
+```
+
+### Coins
+
+```text
+Coins Amount =
+    Consolidated Monetary Value of All Coins
+```
+
+### Employee Cash Total
+
+```text
+Cash Total =
+    Sum of all Note Denomination Amounts
+  + Coins Amount
 ```
 
 ### Employee Accounted Amount
@@ -7158,6 +7342,7 @@ Difference > Allowed Tolerance
 | Employee Reporting | Provide an Employee Details Report |
 | Employee Shift Hours | Maintain employee-specific shift start time, end time and calculated working duration |
 | Employee Shift Reporting | Provide an Employee Shift Hours Report |
+| Cash Denomination Entry | Maintain quantity-based entry for ₹500, ₹200, ₹100, ₹50, ₹20 and ₹10 notes; record all coins as one consolidated Coins amount |
 
 ---
 
