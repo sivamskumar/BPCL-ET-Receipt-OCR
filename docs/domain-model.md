@@ -38,6 +38,7 @@ Station Management
 Employee Management
 Shift Management
 Receipt Processing
+Incoming Fuel Stock Management
 Sales Calculation
 Payment Management
 Adjustment Management
@@ -68,6 +69,7 @@ FuelStation
 Employee
 Shift
 Reconciliation
+IncomingFuelInvoice
 ApplicationUser
 ```
 
@@ -94,6 +96,24 @@ Shift
 Reconciliation
 ├── EmployeeReconciliation
 └── ReconciliationLine
+
+IncomingFuelInvoice
+├── IncomingFuelInvoiceItem
+├── IncomingFuelInvoiceDocument
+└── IncomingFuelInvoiceOcrResult
+
+FuelStation
+│
+├── DispenserUnit
+│   └── Nozzle
+│
+├── Shift
+│
+└── IncomingFuelInvoice
+    ├── IncomingFuelInvoiceDocument
+    ├── IncomingFuelInvoiceItem [1..n]
+    ├── IncomingFuelInvoiceOcrResult
+    └── IncomingFuelInvoiceReview
 ```
 
 ---
@@ -117,6 +137,9 @@ PaymentId
 AdjustmentId
 ReconciliationId
 UserId
+IncomingFuelInvoiceId
+IncomingFuelInvoiceItemId
+IncomingFuelInvoiceDocumentId
 ```
 
 Example conceptual Java representation:
@@ -319,6 +342,51 @@ XXXX XXXX 1234
 
 ---
 
+## 4.11 InvoiceNumber
+
+Represents the business invoice number associated with an incoming fuel delivery.
+
+Properties:
+
+```text
+value
+```
+
+Rules:
+
+- Cannot be blank.
+- Leading and trailing whitespace shall be removed.
+- The original business representation shall be preserved.
+- Duplicate handling shall follow station, supplier and business-date rules defined during detailed design.
+- Invoice Number shall be available before an incoming fuel invoice can be confirmed.
+
+Example:
+
+```text
+1352393838
+```
+
+---
+
+## 4.12 UnitOfMeasurement
+
+Represents the unit in which an incoming fuel quantity is expressed.
+
+Initial examples:
+
+```text
+KL
+LITRE
+```
+
+Rules:
+
+- The original invoice unit should be retained where available.
+- Conversion rules, where required, shall be explicit.
+- Quantity shall not silently change unit during OCR processing.
+
+---
+
 # 5. Enumerations
 
 ## 5.1 FuelType
@@ -489,6 +557,60 @@ Meaning:
 - STARTED — Employee working period has begun but has not yet ended.
 - COMPLETED — Employee working period contains valid start and end date/time.
 - CORRECTED — A completed working period has subsequently been corrected through an authorized process.
+
+---
+
+## 5.12 IncomingFuelInvoiceStatus
+
+Represents the lifecycle of an incoming fuel invoice.
+
+```text
+DRAFT
+UPLOADED
+OCR_PROCESSING
+OCR_COMPLETED
+REVIEW_REQUIRED
+CONFIRMED
+FAILED
+CANCELLED
+```
+
+Meaning:
+
+- `DRAFT` — Invoice capture has started but is not yet submitted.
+- `UPLOADED` — Source invoice document has been stored.
+- `OCR_PROCESSING` — OCR processing is in progress.
+- `OCR_COMPLETED` — OCR processing finished successfully.
+- `REVIEW_REQUIRED` — Extracted information requires user verification.
+- `CONFIRMED` — Authorized user has verified and confirmed the invoice.
+- `FAILED` — OCR processing or invoice processing failed.
+- `CANCELLED` — Invoice processing was intentionally cancelled.
+
+Rules:
+
+- OCR completion shall not automatically imply confirmation.
+- Only reviewed invoice data may become CONFIRMED.
+- CONFIRMED invoices shall follow controlled correction rules.
+
+---
+
+## 5.13 IncomingFuelInvoiceReviewStatus
+
+```text
+PENDING
+IN_REVIEW
+CORRECTED
+CONFIRMED
+REJECTED
+```
+
+Rules:
+
+- `PENDING` means review has not started.
+- `IN_REVIEW` means an authorized user is verifying extracted values.
+- `CORRECTED` means one or more extracted values were changed.
+- `CONFIRMED` means the reviewed values are accepted as business data.
+- `REJECTED` means the invoice requires replacement or cannot be accepted.
 
 ---
 
@@ -916,9 +1038,267 @@ Rules:
 
 ---
 
-# 10. Sales Domain
+# 10. Incoming Fuel Stock Domain
 
-## 10.1 FuelSale — Entity
+## 10.1 IncomingFuelInvoice — Aggregate Root
+
+Represents one incoming fuel delivery invoice received by a fuel station.
+
+The aggregate maintains invoice-level information separately from individual fuel-product items.
+
+Properties:
+
+```text
+incomingFuelInvoiceId
+fuelStationId
+invoiceNumber
+invoiceDate
+invoiceTime
+receivedDate
+totalInvoiceAmount
+status
+sourceDocument
+items
+ocrResult
+confirmedBy
+confirmedAt
+createdBy
+createdAt
+lastUpdatedBy
+lastUpdatedAt
+```
+
+Optional information may include:
+
+```text
+shipmentDocumentNumber
+deliveryNumber
+transportInformation
+```
+
+These optional fields remain subject to final client confirmation.
+
+Rules:
+
+- Fuel Station is mandatory.
+- Invoice Number is mandatory before confirmation.
+- Invoice Date is mandatory before confirmation.
+- A confirmed invoice must contain at least one valid product item.
+- OCR-extracted values shall not become authoritative until reviewed and confirmed.
+- The original source document must remain associated with the invoice.
+- Confirmed invoice data shall not be silently changed.
+- Corrections to confirmed data must be authorized and auditable.
+- Incoming fuel invoices are independent of operational Shift reconciliation.
+- Historical invoices must remain available according to the retention policy.
+
+Responsibilities:
+
+```text
+attach source invoice
+start OCR processing
+record OCR result
+add invoice item
+remove incorrect draft item
+update extracted values
+mark review required
+confirm invoice
+record authorized correction
+cancel processing
+```
+
+---
+
+## 10.2 IncomingFuelInvoiceItem — Entity
+
+Represents one product line belonging to an incoming fuel invoice.
+
+Properties:
+
+```text
+incomingFuelInvoiceItemId
+incomingFuelInvoiceId
+productDescription
+productCode
+fuelType
+quantity
+unitOfMeasurement
+ratePerUnit
+productValue
+taxOrOtherCharges
+```
+
+Rules:
+
+- Every item belongs to exactly one IncomingFuelInvoice.
+- Product Description is mandatory before confirmation.
+- Quantity is mandatory before confirmation.
+- Quantity must be greater than zero.
+- Unit of Measurement should be retained where provided by the invoice.
+- Product Code should be retained where available.
+- Fuel Type should be resolved where the product can be mapped to a configured fuel type.
+- Rate Per Unit must use precise decimal arithmetic.
+- Product Value must use Money.
+- Tax or Other Charges may be retained where the client requires them.
+- OCR-extracted values remain editable until invoice confirmation.
+- Corrections after confirmation require authorization and audit history.
+
+Example:
+
+```text
+Product Description : MS
+Product Code        : 32420
+Quantity            : 15
+Unit                : KL
+Rate Per Unit       : 81374.42
+Product Value       : 1220616.33
+```
+
+Another item in the same invoice may represent Diesel or another configured product.
+
+---
+
+## 10.3 IncomingFuelInvoiceDocument — Entity
+
+Represents the original uploaded or photographed invoice used for OCR-assisted incoming fuel stock entry.
+
+Properties:
+
+```text
+incomingFuelInvoiceDocumentId
+incomingFuelInvoiceId
+originalFilename
+storedFilename
+contentType
+fileSize
+storagePath
+fileHash
+uploadedBy
+uploadedAt
+```
+
+Rules:
+
+- The original source document must remain unchanged during normal business correction.
+- Supported file types and size limits shall follow application configuration.
+- Stored physical filenames shall be generated safely.
+- File hash may be used for duplicate detection.
+- Document access must follow organization and station authorization.
+- Source invoice documents must not be publicly accessible.
+- Replacing a document shall be auditable.
+
+---
+
+## 10.4 IncomingFuelInvoiceOcrResult — Entity
+
+Represents OCR processing output for an incoming fuel invoice.
+
+Properties:
+
+```text
+incomingFuelInvoiceOcrResultId
+incomingFuelInvoiceId
+rawText
+averageConfidence
+processingStatus
+processingStartedAt
+processingCompletedAt
+processingDuration
+headerFieldResults
+itemFieldResults
+warnings
+failureReason
+```
+
+Purpose:
+
+- Preserve the original machine-extracted information.
+- Distinguish OCR output from user-confirmed business data.
+- Support review and audit.
+- Support OCR quality improvement later.
+
+Rules:
+
+- OCR output shall not directly overwrite confirmed invoice data.
+- Original recognized text must remain available.
+- Low-confidence or missing required values must trigger review.
+- Multiple processing attempts may be retained where required.
+- OCR failure must not delete the source invoice document.
+
+---
+
+## 10.5 InvoiceOcrFieldResult — Value Object
+
+Represents one field extracted from an incoming fuel invoice.
+
+Properties:
+
+```text
+fieldName
+recognizedText
+normalizedValue
+confidence
+pageOrRegion
+reviewRequired
+```
+
+Examples:
+
+```text
+INVOICE_NUMBER
+INVOICE_DATE
+INVOICE_TIME
+PRODUCT_DESCRIPTION
+PRODUCT_CODE
+QUANTITY
+UNIT
+RATE_PER_UNIT
+PRODUCT_VALUE
+TOTAL_INVOICE_AMOUNT
+```
+
+Rules:
+
+- Original recognized text must be preserved.
+- Normalized value may differ from raw OCR text.
+- Confidence shall use the Percentage value object where applicable.
+- Fields below the configured threshold may be marked for review.
+
+---
+
+## 10.6 IncomingFuelInvoiceReview — Entity
+
+Represents an authorized review of OCR-extracted incoming fuel invoice information.
+
+Properties:
+
+```text
+incomingFuelInvoiceReviewId
+incomingFuelInvoiceId
+reviewedBy
+reviewedAt
+reviewStatus
+remarks
+correctionsApplied
+```
+
+Purpose:
+
+- Record that OCR-extracted information was reviewed.
+- Preserve who performed the review.
+- Support correction and confirmation traceability.
+
+Rules:
+
+- OCR-extracted information cannot become authoritative without review.
+- Required fields must be valid before confirmation.
+- Corrections made during review must remain traceable.
+- Review shall not alter the original source invoice document.
+
+---
+
+# 11. Sales Domain
+
+## 11.1 FuelSale — Entity
 
 Represents calculated sales for one nozzle during one shift.
 
@@ -970,7 +1350,7 @@ Rules:
 
 ---
 
-## 10.2 EmployeeFuelSalesSummary — Value Object
+## 11.2 EmployeeFuelSalesSummary — Value Object
 
 Properties:
 
@@ -995,9 +1375,9 @@ FuelType → Amount
 
 ---
 
-# 11. Payment Domain
+# 12. Payment Domain
 
-## 11.1 Payment — Entity
+## 12.1 Payment — Entity
 
 Represents a non-denomination collection entry.
 
@@ -1025,7 +1405,7 @@ Rules:
 
 ---
 
-## 11.2 CashDenominationEntry — Entity
+## 12.2 CashDenominationEntry — Entity
 
 Represents the quantity and calculated monetary amount for one supported currency-note denomination held by an employee during a shift.
 
@@ -1073,7 +1453,7 @@ The available note-denomination list should remain configurable.
 
 ---
 
-## 11.3 CoinsEntry — Entity
+## 12.3 CoinsEntry — Entity
 
 Represents the consolidated monetary value of all coins held by an employee during a shift.
 
@@ -1106,7 +1486,7 @@ Rules:
 
 ---
 
-## 11.4 CreditSale — Entity
+## 12.4 CreditSale — Entity
 
 Represents a credit transaction.
 
@@ -1131,7 +1511,7 @@ Rules:
 
 ---
 
-## 11.5 CashSummary — Value Object
+## 12.5 CashSummary — Value Object
 
 Represents the calculated physical cash total for one employee and shift.
 
@@ -1167,7 +1547,7 @@ Rules:
 
 ---
 
-## 11.6 PaymentSummary — Value Object
+## 12.6 PaymentSummary — Value Object
 
 Represents the consolidated collection summary for one employee and shift.
 
@@ -1201,9 +1581,9 @@ Rules:
 
 ---
 
-# 12. Adjustment Domain
+# 13. Adjustment Domain
 
-## 12.1 Adjustment — Entity
+## 13.1 Adjustment — Entity
 
 Represents an approved financial or operational adjustment.
 
@@ -1244,7 +1624,7 @@ Other approved correction
 
 ---
 
-## 12.2 AdjustmentSummary — Value Object
+## 13.2 AdjustmentSummary — Value Object
 
 Properties:
 
@@ -1264,9 +1644,9 @@ Net Adjustment =
 
 ---
 
-# 13. Reconciliation Domain
+# 14. Reconciliation Domain
 
-## 13.1 Reconciliation — Aggregate Root
+## 14.1 Reconciliation — Aggregate Root
 
 Represents the final accounting comparison for one shift.
 
@@ -1335,7 +1715,7 @@ Rules:
 
 ---
 
-## 13.2 EmployeeReconciliation — Entity
+## 14.2 EmployeeReconciliation — Entity
 
 Represents reconciliation for one employee within a shift.
 
@@ -1368,9 +1748,9 @@ Rules:
 
 ---
 
-# 14. Security Domain
+# 15. Security Domain
 
-## 14.1 ApplicationUser — Aggregate Root
+## 15.1 ApplicationUser — Aggregate Root
 
 Represents an authenticated system user.
 
@@ -1397,9 +1777,9 @@ Rules:
 
 ---
 
-# 15. Audit Domain
+# 16. Audit Domain
 
-## 15.1 AuditEvent — Entity
+## 16.1 AuditEvent — Entity
 
 Properties:
 
@@ -1437,11 +1817,20 @@ EMPLOYEE_SHIFT_HOURS_CORRECTED
 CASH_DENOMINATION_ENTERED
 COINS_AMOUNT_ENTERED
 CASH_ENTRY_UPDATED
+INCOMING_FUEL_INVOICE_UPLOADED
+INCOMING_FUEL_INVOICE_OCR_STARTED
+INCOMING_FUEL_INVOICE_OCR_COMPLETED
+INCOMING_FUEL_INVOICE_OCR_FAILED
+INCOMING_FUEL_INVOICE_REVIEWED
+INCOMING_FUEL_INVOICE_CORRECTED
+INCOMING_FUEL_INVOICE_CONFIRMED
+INCOMING_FUEL_INVOICE_CANCELLED
+INCOMING_FUEL_INVOICE_DOCUMENT_REPLACED
 ```
 
 ---
 
-## 15.2 ManualCorrection — Entity
+## 16.2 ManualCorrection — Entity
 
 Properties:
 
@@ -1466,7 +1855,7 @@ Rules:
 
 ---
 
-# 16. Aggregate Boundaries
+# 17. Aggregate Boundaries
 
 ## FuelStation aggregate
 
@@ -1529,7 +1918,29 @@ The reconciliation aggregate references a completed Shift by identifier and read
 
 ---
 
-# 17. Domain Services
+## IncomingFuelInvoice aggregate
+
+Owns:
+
+```text
+IncomingFuelInvoice
+IncomingFuelInvoiceItem
+IncomingFuelInvoiceDocument
+IncomingFuelInvoiceOcrResult
+IncomingFuelInvoiceReview
+```
+
+Rules:
+
+- Invoice items cannot exist independently of their invoice.
+- Source documents remain linked to the invoice.
+- OCR results are subordinate processing records.
+- User-confirmed values remain the authoritative business state.
+- The aggregate does not belong to Shift and shall not modify reconciliation transactions.
+
+---
+
+# 18. Domain Services
 
 Some business logic does not naturally belong to one entity.
 
@@ -1622,7 +2033,43 @@ Validate OCR confidence
 
 ---
 
-# 18. Application Services
+## IncomingFuelInvoiceValidationService
+
+Responsibilities:
+
+```text
+Validate invoice number
+Validate invoice date
+Validate required product items
+Validate positive quantities
+Validate product codes where configured
+Validate invoice confirmation readiness
+Detect missing required information
+```
+
+---
+
+## IncomingFuelInvoiceOcrService
+
+Responsibilities:
+
+```text
+Process invoice document
+Extract invoice header fields
+Extract multiple product items
+Normalize extracted values
+Produce field confidence information
+Flag uncertain values for review
+Preserve original OCR output
+```
+
+One important DDD note:
+
+The **interface** for OCR capability may belong to the domain/application layer, but the actual Tesseract or other OCR implementation belongs to infrastructure.
+
+---
+
+# 19. Application Services
 
 Suggested application services:
 
@@ -1635,6 +2082,9 @@ EmployeeShiftHoursApplicationService
 ReceiptUploadApplicationService
 ReceiptProcessingApplicationService
 ReadingConfirmationApplicationService
+IncomingFuelInvoiceApplicationService
+IncomingFuelInvoiceOcrApplicationService
+IncomingFuelInvoiceReviewApplicationService
 PaymentEntryApplicationService
 AdjustmentApplicationService
 ReconciliationApplicationService
@@ -1646,7 +2096,7 @@ Application services orchestrate use cases but must delegate business calculatio
 
 ---
 
-# 19. Repository Interfaces
+# 20. Repository Interfaces
 
 Suggested domain repository interfaces:
 
@@ -1658,6 +2108,7 @@ NozzleAssignmentRepository
 ShiftRepository
 ReceiptRepository
 FuelPriceRepository
+IncomingFuelInvoiceRepository
 PaymentRepository
 AdjustmentRepository
 ReconciliationRepository
@@ -1671,7 +2122,7 @@ Database implementations belong to infrastructure.
 
 ---
 
-# 20. Important Domain Invariants
+# 21. Important Domain Invariants
 
 The following rules must always hold:
 
@@ -1699,10 +2150,20 @@ The following rules must always hold:
 22. Employee Cash Total equals the sum of all calculated note-denomination amounts plus the consolidated Coins amount.
 23. Individual ₹5, ₹2 and ₹1 coin quantities are not required by the cash-entry domain model.
 24. Only one consolidated Coins entry may apply to one employee within one shift.
+25. Incoming fuel invoices remain independent of operational shift reconciliation.
+26. One IncomingFuelInvoice may contain one or more IncomingFuelInvoiceItem entities.
+27. Every IncomingFuelInvoiceItem belongs to exactly one IncomingFuelInvoice.
+28. A confirmed incoming fuel invoice must contain an Invoice Number and Invoice Date.
+29. A confirmed incoming fuel invoice must contain at least one valid product item.
+30. Every confirmed product item must have a Quantity greater than zero.
+31. OCR-extracted invoice information is not authoritative until reviewed and confirmed.
+32. Original invoice documents must remain unchanged during normal data correction.
+33. Confirmed invoice corrections must be authorized and auditable.
+34. Original OCR values must remain traceable after user correction.
 
 ---
 
-# 21. Example Shift Scenario
+# 22. Example Shift Scenario
 
 ## Station configuration
 
@@ -1778,7 +2239,7 @@ The shift-level result is calculated from the employee-level results.
 
 ---
 
-# 22. Future Domain Extensions
+# 23. Future Domain Extensions
 
 The model should allow future support for:
 
