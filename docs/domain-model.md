@@ -81,6 +81,7 @@ FuelStation
 
 Shift
 ├── ShiftEmployee
+│   └── EmployeeShiftHours
 ├── Receipt
 │   └── ReceiptReading
 ├── Payment
@@ -293,6 +294,28 @@ Purpose:
 - File integrity
 - Audit tracking
 
+
+---
+
+## 4.10 AadhaarNumber
+
+Represents the Aadhaar Number associated with an employee profile.
+
+Rules:
+
+- Must be treated as sensitive personal information.
+- Must not be written to ordinary application logs.
+- Full value must only be exposed to appropriately authorized users.
+- Masked representation should be used where full disclosure is unnecessary.
+- Storage and protection must follow the approved security design.
+- Validation rules shall follow the applicable business and regulatory requirements.
+
+Example masked representation:
+
+```text
+XXXX XXXX 1234
+```
+
 ---
 
 # 5. Enumerations
@@ -433,6 +456,41 @@ AUDITOR
 
 ---
 
+## 5.10 EmployeeStatus
+
+Represents the current employment state of an employee.
+
+```text
+ACTIVE
+INACTIVE
+LEFT
+```
+
+Rules:
+
+- ACTIVE employees may participate in new operational activities subject to valid assignments.
+- INACTIVE employees must not participate in new shifts or receive new nozzle assignments until reactivated.
+- LEFT employees must not participate in new shifts or receive new nozzle assignments.
+- Historical shift records must retain employee identityLEFT employees must have a Date of Leaving.
+- Historical information must remain available regardless of the employee's current status.
+
+---
+
+## 5.11 EmployeeShiftHoursStatus
+
+```text
+STARTED
+COMPLETED
+CORRECTED
+```
+Meaning:
+
+- STARTED — Employee working period has begun but has not yet ended.
+- COMPLETED — Employee working period contains valid start and end date/time.
+- CORRECTED — A completed working period has subsequently been corrected through an authorized process.
+
+---
+
 # 6. Station Management Domain
 
 ## 6.1 FuelStation — Aggregate Root
@@ -551,7 +609,7 @@ The example is configuration data, not a hardcoded business rule.
 
 ## 7.1 Employee — Aggregate Root
 
-Represents an employee responsible for nozzle operations and collection entry.
+Represents an employee who participates in fuel-station operations and whose employment profile is maintained by the organization.
 
 Properties:
 
@@ -560,21 +618,39 @@ employeeId
 employeeCode
 employeeName
 mobileNumber
-active
+aadhaarNumber
+address
+photographReference
+dateOfJoining
+dateOfLeaving
+employmentStatus
 ```
 
 Rules:
 
-- Employee code must be unique
-- Employee name cannot be blank
-- Inactive employees cannot be assigned to new shifts
-- Historical shift records must retain employee identity
+- Employee code must be unique within the organization.
+- Employee name cannot be blank.
+- Date of Joining is mandatory.
+- Date of Leaving is optional while the employee is ACTIVE.
+- Date of Leaving cannot be earlier than Date of Joining.
+- An employee with status LEFT must have a Date of Leaving.
+- INACTIVE employees cannot participate in new shifts or receive new nozzle assignments.
+- LEFT employees cannot participate in new shifts or receive new nozzle assignments.
+- Historical employee information must remain available after an employee becomes INACTIVE or LEFT.
+- Employee records referenced by historical business transactions must not be physically deleted through normal business operations.
+- Aadhaar Number must be treated as sensitive personal information.
+- Employee photograph access must follow employee-profile authorization rules.
 
 Responsibilities:
 
-- Maintain employee profile
-- Activate or deactivate employee
-- Participate in nozzle assignments and shifts
+```text
+maintain employee profile
+activate employee
+deactivate employee
+mark employee as left
+validate employment dates
+determine operational eligibility
+```
 
 ---
 
@@ -655,9 +731,71 @@ Purpose:
 
 Rules:
 
-- Employee must have at least one assigned nozzle for the shift
-- A nozzle may belong to only one employee in a shift
-- Snapshot assignments should be retained after shift creation
+- Employee must be ACTIVE when added to a new shift.
+- Employee must have at least one assigned nozzle for the shift where nozzle assignment is required.
+- A nozzle may belong to only one employee in a shift.
+- Snapshot assignments must be retained after shift creation.
+- Later changes to the Employee master record must not alter historical shift participation.
+- Employee working hours must be maintained independently from the overall operational shift start and end times.
+
+---
+
+## 8.3 EmployeeShiftHours — Entity
+
+Represents the actual recorded working period of one employee participating in an operational shift.
+
+Properties:
+
+```text
+employeeShiftHoursId
+shiftId
+shiftEmployeeId
+employeeId
+startedAt
+endedAt
+totalDuration
+status
+remarks
+```
+
+Purpose:
+
+- Record employee-specific working time.
+- Allow employee working hours to differ from the overall operational shift duration.
+- Support employee shift-hours reporting.
+- Preserve historical working-hour information.
+
+Calculation:
+
+```text
+Total Duration =
+    Employee Shift End Date/Time
+  - Employee Shift Start Date/Time
+```
+
+Rules:
+
+- The employee must participate in the associated operational shift.
+- Employee Shift Start Date and Time are mandatory when employee work begins.
+- Employee Shift End Date and Time cannot precede Employee Shift Start Date and Time.
+- Total Duration can only be finalized when both start and end date/time are available.
+- Total Duration must be derived from start and end date/time.
+- Working periods crossing midnight are valid.
+- Employee working times do not have to equal the operational Shift start and end times.
+- Changes to completed working-time records require authorization.
+- Corrections must include a reason.
+- Previous values must remain available through audit history.
+- Historical working-hour records remain available when an employee later becomes INACTIVE or LEFT.
+
+Responsibilities:
+
+```text
+start employee work period
+end employee work period
+calculate working duration
+validate working period
+apply authorized correction
+```
 
 ---
 
@@ -1207,6 +1345,13 @@ ADJUSTMENT_ADDED
 RECONCILIATION_CALCULATED
 RECONCILIATION_APPROVED
 SHIFT_CLOSED
+EMPLOYEE_PROFILE_CREATED
+EMPLOYEE_PROFILE_UPDATED
+EMPLOYEE_STATUS_CHANGED
+EMPLOYEE_PHOTOGRAPH_CHANGED
+EMPLOYEE_SHIFT_STARTED
+EMPLOYEE_SHIFT_ENDED
+EMPLOYEE_SHIFT_HOURS_CORRECTED
 ```
 
 ---
@@ -1271,6 +1416,7 @@ Owns:
 ```text
 Shift
 ShiftEmployee
+EmployeeShiftHours
 Receipt
 ReceiptReading
 FuelSale
@@ -1395,6 +1541,7 @@ FuelStationApplicationService
 EmployeeApplicationService
 NozzleAssignmentApplicationService
 ShiftApplicationService
+EmployeeShiftHoursApplicationService
 ReceiptUploadApplicationService
 ReceiptProcessingApplicationService
 ReadingConfirmationApplicationService
@@ -1452,6 +1599,13 @@ The following rules must always hold:
 12. Manual corrections retain original OCR values.
 13. Approved and closed records cannot be silently modified.
 14. All significant operations are audited.
+15. Only ACTIVE employees may participate in new operational shifts or receive new nozzle assignments.
+16. Date of Leaving cannot be earlier than Date of Joining.
+17. An employee with status LEFT must have a Date of Leaving.
+18. Employee working hours are maintained independently from the operational shift duration.
+19. Employee Shift End Date/Time cannot precede Employee Shift Start Date/Time.
+20. Employee Shift Duration is derived from employee start and end date/time.
+21. Historical employee and employee-shift information must remain unchanged by later employee-status changes.
 
 ---
 
@@ -1542,7 +1696,6 @@ The model should allow future support for:
 - Credit customer management
 - Payment settlement tracking
 - Bank deposit verification
-- Multi-level approval
 - Multi-organization tenancy
 - Offline mobile receipt capture
 - Automated price synchronization
