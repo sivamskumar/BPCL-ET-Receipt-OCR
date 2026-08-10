@@ -86,6 +86,7 @@ Shift
 │   └── ReceiptReading
 ├── Payment
 ├── CashDenominationEntry
+├── CoinsEntry
 ├── CreditSale
 ├── Adjustment
 └── FuelSale
@@ -675,7 +676,8 @@ startReceipt
 endReceipt
 fuelSales
 payments
-cashDenominations
+cashDenominationEntries
+coinsEntries
 creditSales
 adjustments
 ```
@@ -1025,7 +1027,7 @@ Rules:
 
 ## 11.2 CashDenominationEntry — Entity
 
-Represents a count for one currency denomination.
+Represents the quantity and calculated monetary amount for one supported currency-note denomination held by an employee during a shift.
 
 Properties:
 
@@ -1042,17 +1044,21 @@ Calculation:
 
 ```text
 Calculated Amount =
-    Denomination Value × Quantity
+    Denomination Value
+  × Quantity
 ```
 
 Rules:
 
-- Denomination value must be positive
-- Quantity must be a non-negative whole number
-- Calculated amount must be derived, not manually entered
-- Duplicate denomination rows for the same employee and shift are not allowed
+- Denomination Value must be positive.
+- Quantity must be a non-negative whole number.
+- Calculated Amount must be derived and must not be manually entered.
+- Duplicate denomination rows for the same employee and shift are not allowed.
+- Only configured note denominations may be used.
+- Individual ₹5, ₹2 and ₹1 coin denominations shall not be represented as CashDenominationEntry records.
+- Historical denomination entries shall remain unchanged when denomination configuration changes.
 
-Suggested initial denominations:
+Initial supported note denominations:
 
 ```text
 500
@@ -1061,16 +1067,46 @@ Suggested initial denominations:
 50
 20
 10
-5
-2
-1
 ```
 
-The available denomination list should be configurable.
+The available note-denomination list should remain configurable.
 
 ---
 
-## 11.3 CreditSale — Entity
+## 11.3 CoinsEntry — Entity
+
+Represents the consolidated monetary value of all coins held by an employee during a shift.
+
+Properties:
+
+```text
+coinsEntryId
+shiftId
+employeeId
+amount
+enteredBy
+enteredAt
+```
+
+Purpose:
+
+- Avoid denomination-wise entry for ₹5, ₹2 and ₹1 coins.
+- Record the total monetary value of all coins as one amount.
+- Participate directly in the employee Cash Total.
+
+Rules:
+
+- Amount must use the Money value object.
+- Amount must be zero or greater.
+- The employee shall not be required to enter individual coin quantities.
+- Only one active CoinsEntry shall exist for one employee and shift.
+- The Coins amount is entered directly and is not calculated from denomination value and quantity.
+- Changes before final submission may update the entry.
+- Changes after protected workflow stages must follow the applicable correction and audit rules.
+
+---
+
+## 11.4 CreditSale — Entity
 
 Represents a credit transaction.
 
@@ -1095,12 +1131,50 @@ Rules:
 
 ---
 
-## 11.4 PaymentSummary — Value Object
+## 11.5 CashSummary — Value Object
+
+Represents the calculated physical cash total for one employee and shift.
 
 Properties:
 
 ```text
+totalNotesAmount
+coinsAmount
 cashTotal
+```
+
+Calculation:
+
+```text
+Cash Total =
+    Total Notes Amount
+  + Coins Amount
+```
+
+Where:
+
+```text
+Total Notes Amount =
+    Sum of all CashDenominationEntry calculated amounts
+```
+
+Rules:
+
+- Total Notes Amount is derived from note-denomination entries.
+- Coins Amount is taken from the employee's CoinsEntry.
+- Cash Total must be derived and must not be manually overwritten.
+- Missing cash categories may be interpreted according to the applicable collection-completeness rules.
+
+---
+
+## 11.6 PaymentSummary — Value Object
+
+Represents the consolidated collection summary for one employee and shift.
+
+Properties:
+
+```text
+cashSummary
 upiTotal
 cardTotal
 creditTotal
@@ -1111,11 +1185,19 @@ Calculation:
 
 ```text
 Total Collections =
-    Cash Total
+    Cash Summary.Cash Total
   + UPI Total
   + Card Total
   + Credit Total
 ```
+
+Rules:
+
+- Cash Total must originate from CashSummary.
+- UPI Total must equal the sum of applicable UPI payment entries.
+- Card Total must equal the sum of applicable card payment entries.
+- Credit Total must equal the sum of CreditSale amounts.
+- Total Collections must be derived and must not be manually overwritten.
 
 ---
 
@@ -1352,6 +1434,9 @@ EMPLOYEE_PHOTOGRAPH_CHANGED
 EMPLOYEE_SHIFT_STARTED
 EMPLOYEE_SHIFT_ENDED
 EMPLOYEE_SHIFT_HOURS_CORRECTED
+CASH_DENOMINATION_ENTERED
+COINS_AMOUNT_ENTERED
+CASH_ENTRY_UPDATED
 ```
 
 ---
@@ -1422,6 +1507,7 @@ ReceiptReading
 FuelSale
 Payment
 CashDenominationEntry
+CoinsEntry
 CreditSale
 Adjustment
 ```
@@ -1482,10 +1568,14 @@ Create assignment snapshot for shift
 Responsibilities:
 
 ```text
-Calculate cash denomination total
+Calculate note-denomination amounts
+Calculate total notes amount
+Include consolidated Coins amount
+Calculate employee cash total
 Aggregate UPI payments
 Aggregate card payments
 Aggregate credit sales
+Build employee payment summary
 ```
 
 ---
@@ -1594,7 +1684,7 @@ The following rules must always hold:
 7. Each nozzle is assigned to only one employee for a shift.
 8. Fuel price exists for every sold fuel type.
 9. Monetary and volume calculations use `BigDecimal`.
-10. Cash totals are derived from denomination values and quantities.
+10. Note amounts are derived from denomination values and quantities, while the Coins amount is entered directly.
 11. Reconciliation values are derived from source transactions.
 12. Manual corrections retain original OCR values.
 13. Approved and closed records cannot be silently modified.
@@ -1606,6 +1696,9 @@ The following rules must always hold:
 19. Employee Shift End Date/Time cannot precede Employee Shift Start Date/Time.
 20. Employee Shift Duration is derived from employee start and end date/time.
 21. Historical employee and employee-shift information must remain unchanged by later employee-status changes.
+22. Employee Cash Total equals the sum of all calculated note-denomination amounts plus the consolidated Coins amount.
+23. Individual ₹5, ₹2 and ₹1 coin quantities are not required by the cash-entry domain model.
+24. Only one consolidated Coins entry may apply to one employee within one shift.
 
 ---
 
