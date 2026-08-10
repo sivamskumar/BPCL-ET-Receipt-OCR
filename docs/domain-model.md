@@ -95,7 +95,8 @@ Shift
 
 Reconciliation
 ├── EmployeeReconciliation
-└── ReconciliationLine
+├── ReconciliationSubmission
+└── ApprovalDecision
 
 IncomingFuelInvoice
 ├── IncomingFuelInvoiceItem
@@ -447,11 +448,25 @@ OCR_COMPLETED
 READINGS_CONFIRMED
 PAYMENTS_ENTERED
 RECONCILED
-SUBMITTED
+SUBMITTED_FOR_LEVEL_1_REVIEW
+RETURNED_TO_EMPLOYEE
+RESUBMITTED
+LEVEL_1_APPROVED
+LEVEL_1_APPROVED_WITH_REMARKS
+FORWARDED_FOR_LEVEL_2_APPROVAL
 APPROVED
 CLOSED
 CANCELLED
 ```
+
+Rules:
+
+- Status transitions must follow the approved workflow.
+- A RETURNED_TO_EMPLOYEE shift may be corrected and resubmitted.
+- APPROVED means Level-2 approval has completed successfully.
+- Only an APPROVED shift may transition to CLOSED.
+- CLOSED and CANCELLED shifts are read-only during normal operation.
+- Every status transition must be auditable.
 
 ---
 
@@ -506,10 +521,14 @@ MATCHED
 SHORTAGE
 EXCESS
 PENDING_REVIEW
-SUBMITTED
-APPROVED
-REJECTED
 ```
+
+Rules:
+
+- MATCHED, SHORTAGE and EXCESS are calculated states.
+- Users must not manually overwrite the calculated reconciliation result.
+- PENDING_REVIEW applies when mandatory information or approvals required for calculation are incomplete.
+- Approval workflow state shall be maintained separately.
 
 ---
 
@@ -517,11 +536,25 @@ REJECTED
 
 ```text
 EMPLOYEE
+REVIEWER
+APPROVER
 SUPERVISOR
 MANAGER
 ADMINISTRATOR
 AUDITOR
 ```
+Approval responsibilities remain distinct:
+
+EMPLOYEE  → submits reconciliation
+REVIEWER  → performs Level-1 Review
+APPROVER  → performs Level-2 Approval
+
+Rules:
+
+- An employee cannot approve their own reconciliation.
+- Level-1 Review requires REVIEWER authorization.
+- Level-2 Approval requires APPROVER authorization.
+- Broader administrative roles shall not automatically bypass approval segregation.
 
 ---
 
@@ -611,6 +644,62 @@ Rules:
 - `CORRECTED` means one or more extracted values were changed.
 - `CONFIRMED` means the reviewed values are accepted as business data.
 - `REJECTED` means the invoice requires replacement or cannot be accepted.
+
+---
+
+## 5.14 ApprovalLevel
+
+```text
+LEVEL_1
+LEVEL_2
+```
+
+Meaning:
+
+LEVEL_1 — First Reviewer
+LEVEL_2 — Final Approver
+
+---
+
+## 5.15 ApprovalAction
+
+```text
+SUBMITTED
+RETURNED_TO_EMPLOYEE
+RESUBMITTED
+APPROVED
+APPROVED_WITH_REMARKS
+REJECTED
+```
+
+Rules:
+
+- APPROVED_WITH_REMARKS is used where a shortage or excess continues and approval requires justification.
+- RETURNED_TO_EMPLOYEE and REJECTED actions require a business reason or remarks according to the workflow.
+
+---
+
+## 5.16 ApprovalWorkflowStatus
+
+```text
+NOT_SUBMITTED
+PENDING_LEVEL_1_REVIEW
+RETURNED_TO_EMPLOYEE
+RESUBMITTED
+LEVEL_1_APPROVED
+LEVEL_1_APPROVED_WITH_REMARKS
+PENDING_LEVEL_2_APPROVAL
+APPROVED
+REJECTED
+```
+
+Rules:
+
+- Submission moves the workflow to PENDING_LEVEL_1_REVIEW.
+- Initial shortage or excess may be returned to the employee.
+- Employee correction may produce a RESUBMITTED state.
+- Persistent shortage or excess may be approved by Level-1 only with remarks.
+- Level-2 approval is required before the workflow becomes APPROVED.
 
 ---
 
@@ -827,10 +916,10 @@ calculate fuel sales
 record payments
 record adjustments
 perform reconciliation
-submit
-approve
-close
-cancel
+submit reconciliation
+apply workflow status
+close approved shift
+cancel shift
 ```
 
 ---
@@ -1665,13 +1754,16 @@ expenseTotal
 accountedAmount
 differenceAmount
 allowedTolerance
-status
+reconciliationStatus
+approvalWorkflowStatus
 calculatedAt
 submittedAt
-approvedAt
-approvedBy
+finalApprovedAt
+finalApprovedBy
 remarks
 employeeReconciliations
+submissions
+approvalDecisions
 ```
 
 Calculation:
@@ -1707,11 +1799,29 @@ Difference > Allowed Tolerance
 
 Rules:
 
-- Reconciliation must be reproducible from source data
-- Calculated values must not be manually overwritten
-- A recalculation must create audit history
-- Approval must record user and timestamp
-- Closed reconciliation records are immutable except through controlled correction
+- ReconciliationStatus is derived from the calculated difference and tolerance.
+- ApprovalWorkflowStatus is controlled by the review workflow.
+- A reconciliation cannot enter Level-1 Review until mandatory shift information is complete.
+- A MATCHED reconciliation may proceed through Level-1 and Level-2 approval.
+- Initial SHORTAGE or EXCESS may be returned to the employee for correction.
+- A resubmitted SHORTAGE or EXCESS may be forwarded by Level-1 only with mandatory remarks.
+- Level-2 may approve or return/reject according to the approved workflow.
+- Final approval shall identify the Level-2 Approver and timestamp.
+- Previous submissions and approval decisions shall never be silently overwritten.
+- Closed reconciliations are immutable except through an authorized correction process.
+
+Responsibilities:
+
+```text
+calculate reconciliation
+determine calculated status
+submit for review
+record resubmission
+record Level-1 decision
+record Level-2 decision
+determine approval workflow status
+finalize approval
+```
 
 ---
 
@@ -1748,6 +1858,73 @@ Rules:
 
 ---
 
+## 14.3 ReconciliationSubmission — Entity
+
+Represents an employee submission or resubmission of a completed reconciliation for review.
+
+Properties:
+
+```text
+reconciliationSubmissionId
+reconciliationId
+submissionNumber
+submittedBy
+submittedAt
+submissionType
+remarks
+```
+
+Submission types:
+INITIAL
+RESUBMISSION
+
+Rules:
+
+- The initial submission shall use Submission Number 1.
+- Every resubmission shall increment the submission number.
+- Submitted By must identify the responsible employee/user.
+- Submission date and time are mandatory.
+- Previous submissions shall remain available.
+- A resubmission shall not delete previous reviewer or approver decisions.
+
+---
+
+## 14.4 ApprovalDecision — Entity
+
+Represents one Level-1 or Level-2 approval workflow decision.
+
+Properties:
+
+```text
+approvalDecisionId
+reconciliationId
+submissionNumber
+approvalLevel
+action
+actedBy
+remarks
+reason
+previousWorkflowStatus
+newWorkflowStatus
+actedAt
+```
+
+Rules:
+
+- Approval Level is mandatory.
+- Action is mandatory.
+- Acted By is mandatory.
+- Acted At is mandatory.
+- Level-1 actions require REVIEWER authorization.
+- Level-2 actions require APPROVER authorization.
+- Return or rejection requires a reason.
+- Approval with remarks requires remarks.
+- Approval decisions must never be deleted or overwritten.
+- Previous and new workflow statuses must be retained.
+- A user must not perform an approval action prohibited by segregation rules.
+
+---
+
 # 15. Security Domain
 
 ## 15.1 ApplicationUser — Aggregate Root
@@ -1774,6 +1951,8 @@ Rules:
 - An employee user may be linked to an Employee record
 - Inactive users cannot authenticate
 - Authorization is determined by assigned roles
+- Linking an ApplicationUser to an Employee is optional unless the user's operational role requires an employee identity.
+- Reviewer, Approver, Administrator and Auditor accounts may exist without an Employee association.
 
 ---
 
@@ -1826,6 +2005,13 @@ INCOMING_FUEL_INVOICE_CORRECTED
 INCOMING_FUEL_INVOICE_CONFIRMED
 INCOMING_FUEL_INVOICE_CANCELLED
 INCOMING_FUEL_INVOICE_DOCUMENT_REPLACED
+RECONCILIATION_SUBMITTED
+RECONCILIATION_RETURNED
+RECONCILIATION_RESUBMITTED
+LEVEL_1_APPROVED
+LEVEL_1_APPROVED_WITH_REMARKS
+LEVEL_2_APPROVED
+LEVEL_2_REJECTED
 ```
 
 ---
@@ -1912,9 +2098,18 @@ Owns:
 ```text
 Reconciliation
 EmployeeReconciliation
+ReconciliationSubmission
+ApprovalDecision
 ```
 
 The reconciliation aggregate references a completed Shift by identifier and reads immutable shift calculation inputs.
+
+Rules:
+
+- Employee reconciliation results belong to the overall reconciliation.
+- Submission history belongs to the reconciliation.
+- Approval decisions belong to the reconciliation.
+- Submission and approval history must remain immutable after creation except through explicitly modeled corrective processes.
 
 ---
 
@@ -2069,6 +2264,28 @@ The **interface** for OCR capability may belong to the domain/application layer,
 
 ---
 
+## ApprovalWorkflowService
+
+Responsibilities:
+
+```text
+Validate reconciliation submission eligibility
+Validate Level-1 reviewer authority
+Return reconciliation to employee
+Validate employee resubmission
+Process Level-1 approval
+Require remarks for persistent shortage or excess
+Forward reconciliation to Level-2
+Validate Level-2 approver authority
+Process final approval
+Process Level-2 rejection or return
+Enforce approval segregation
+Determine valid workflow transitions
+```
+
+
+---
+
 # 19. Application Services
 
 Suggested application services:
@@ -2160,6 +2377,17 @@ The following rules must always hold:
 32. Original invoice documents must remain unchanged during normal data correction.
 33. Confirmed invoice corrections must be authorized and auditable.
 34. Original OCR values must remain traceable after user correction.
+35. Reconciliation calculation status and approval workflow status are separate domain concepts.
+36. An employee cannot approve their own reconciliation.
+37. Level-1 approval actions require an authorized Reviewer.
+38. Level-2 approval actions require an authorized Approver.
+39. Every reconciliation submission and resubmission must remain historically traceable.
+40. Every approval decision must retain actor, action, timestamp and workflow transition.
+41. Return or rejection actions require a business reason.
+42. Approval of a persistent shortage or excess at Level-1 requires remarks.
+43. Final approval requires successful Level-2 approval.
+44. Only an approved reconciliation may permit normal shift closure.
+45. Approval decisions must never be silently overwritten or deleted.
 
 ---
 
