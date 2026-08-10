@@ -29,7 +29,7 @@
 | 0.4 | July 2026 | Sivakumar Mani | Business rules and quality requirements |
 | 0.5 | July 2026 | Sivakumar Mani | Workflows, screens and reports |
 | 1.0 Draft | July 2026 | Sivakumar Mani | Consolidated draft for client review |
-| 1.1 Draft | August 2026 | Sivakumar Mani | Client review updates - completed screen specifications, employee profile management and reporting, employee shift-hours tracking, consolidated Coins entry and incoming fuel stock management |
+| 1.1 Draft | August 2026 | Sivakumar Mani | Client review updates including employee management, shift hours, cash-entry changes, incoming fuel stock and OCR-assisted fuel invoice processing |
 
 ---
 
@@ -3662,6 +3662,10 @@ The system shall allow authorized users to record incoming fuel stock received b
 
 Incoming fuel stock shall be maintained independently from employee shift reconciliation records.
 
+Incoming fuel stock may be created through OCR-assisted invoice capture or through an authorized manual-entry process when OCR processing is unavailable or unsuitable.
+
+Where a single invoice contains multiple fuel products, the system shall maintain the invoice-level information separately from its individual product items.
+
 ### Stock Information
 
 Each incoming fuel stock record shall include:
@@ -3828,6 +3832,253 @@ The audit record shall identify:
 - Correction Reason, where applicable
 
 Audit records shall not be editable through normal application operations.
+
+---
+
+# 9.20 Incoming Fuel Invoice OCR Processing
+
+## FR-135 — Upload Incoming Fuel Invoice
+
+**Module ID:** STK-006
+**Priority:** Critical
+**Primary Actors:** Administrator, Manager
+
+### Business Requirement
+
+The system shall allow an authorized user to provide an incoming fuel invoice as the source document for incoming fuel stock entry.
+
+### Supported Capture Methods
+
+On a supported device, the user shall be able to:
+
+- Take a new photograph of the invoice using the device camera.
+- Select an existing invoice image.
+- Preview the selected invoice.
+- Replace an unsuitable invoice image before processing.
+- Submit the invoice for OCR processing.
+
+### Acceptance Criteria
+
+- An invoice image is mandatory before OCR processing can begin.
+- The uploaded image shall be associated with the applicable fuel station.
+- Only supported image formats shall be accepted.
+- File-size and image-quality limits shall follow application configuration.
+- The user shall be able to preview the selected image before submission.
+- The original submitted invoice image shall be retained according to the applicable retention policy.
+
+---
+
+## FR-136 — Process Incoming Fuel Invoice Using OCR
+
+**Module ID:** STK-007
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall process the submitted incoming fuel invoice using OCR and attempt to extract the business information required for incoming fuel stock management.
+
+### OCR Processing
+
+The OCR process shall attempt to identify:
+
+- Invoice Number
+- Invoice Date
+- Invoice Time, where available
+- Product Information
+- Quantity Information
+- Value Information
+- Total Invoice Amount
+
+Additional invoice information may be extracted where required by the approved business requirements.
+
+### Acceptance Criteria
+
+- OCR processing shall not directly finalize incoming fuel stock information.
+- OCR processing status shall be visible to the user.
+- OCR failure shall not create a finalized incoming fuel stock record.
+- The system shall distinguish successfully extracted information from information requiring user review.
+- The user shall be able to continue through an authorized manual-review process when OCR extraction is incomplete.
+
+---
+
+## FR-137 — Extract Incoming Fuel Invoice Header
+
+**Module ID:** STK-008
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall attempt to extract invoice-level information from an incoming fuel invoice.
+
+### Invoice Header Information
+
+The initial extraction shall include:
+
+- Invoice Number
+- Invoice Date
+- Invoice Time, where available
+- Total Invoice Amount
+
+Where supported by the invoice and approved business requirements, the system may also capture:
+
+- Shipment Document Number
+- Delivery Number
+- Transport or Vehicle Information
+
+### Acceptance Criteria
+
+- Invoice Number shall remain mandatory before final confirmation.
+- Invoice Date shall remain mandatory before final confirmation.
+- Extracted values shall be displayed for user verification.
+- Missing or uncertain values shall be clearly identifiable during review.
+- OCR-extracted values shall remain editable before confirmation by an authorized user.
+
+---
+
+## FR-138 — Extract Incoming Fuel Invoice Product Items
+
+**Module ID:** STK-009
+**Priority:** Critical
+
+### Business Requirement
+
+The system shall support one or more fuel-product items within a single incoming fuel invoice.
+
+For each identified product item, the system shall attempt to extract:
+
+- Product Description
+- Product Code
+- Quantity
+- Unit of Measurement
+- Rate Per Unit
+- Product Value
+- Tax or Other Charges, where identifiable
+
+### Business Structure
+
+```text
+Incoming Fuel Invoice
+        |
+        +-- Product Item 1
+        |
+        +-- Product Item 2
+        |
+        +-- ...
+        |
+        +-- Product Item N
+```
+
+### Acceptance Criteria
+
+- A single invoice may contain multiple product items.
+- Each product item shall belong to exactly one incoming fuel invoice.
+- Product Description shall be available before final confirmation.
+- Quantity shall be available before final confirmation.
+- Quantity shall be greater than zero.
+- Unit of Measurement shall be retained where provided by the invoice.
+- Product Code shall be retained where available.
+- Rate Per Unit shall be retained where available.
+- Product Value shall be retained where available.
+- Extracted product information shall be presented for user verification.
+- The user shall be able to correct incorrectly extracted product information before confirmation.
+
+---
+
+## FR-139 — Review and Correct Extracted Invoice Information
+
+**Module ID:** STK-010
+**Priority:** Critical
+**Primary Actors:** Administrator, Manager
+
+### Business Requirement
+
+The system shall require an authorized user to review OCR-extracted incoming fuel invoice information before it becomes confirmed business data.
+
+### Review Information
+
+The review shall present:
+
+- Source Invoice Image
+- Invoice Header Information
+- Extracted Product Items
+- Quantities
+- Units
+- Rates
+- Product Values
+- Tax or Other Charges, where captured
+- Total Invoice Amount
+
+### Main Actions
+
+- Review Extracted Data
+- Correct Extracted Data
+- Add Missing Product Item
+- Remove Incorrect Product Item
+- Reprocess Invoice, where supported
+- Confirm Invoice
+- Cancel Processing
+
+### Acceptance Criteria
+
+- OCR-extracted values shall not be considered final until confirmed.
+- Users shall be able to correct incorrectly extracted values.
+- Users shall be able to enter values that OCR could not determine.
+- Required information shall be validated before confirmation.
+- User corrections shall be distinguishable from the original OCR result for audit purposes.
+
+---
+
+## FR-140 — Confirm Incoming Fuel Invoice
+
+**Module ID:** STK-011
+**Priority:** Critical
+**Primary Actors:** Administrator, Manager
+
+### Business Requirement
+
+The system shall allow an authorized user to confirm reviewed incoming fuel invoice information.
+
+Confirmation shall establish the reviewed information as the authoritative incoming fuel stock record.
+
+### Preconditions
+
+Before confirmation:
+
+- Invoice Number shall be available.
+- Invoice Date shall be available.
+- At least one valid product item shall be available.
+- Every confirmed product item shall contain a valid Quantity.
+- Required validation errors shall be resolved.
+
+### Acceptance Criteria
+
+- Unreviewed OCR results shall not be finalized automatically.
+- The confirming user shall be recorded.
+- Confirmation date and time shall be recorded.
+- Confirmed invoice header information shall be persisted.
+- Confirmed product items shall be persisted.
+- The original source invoice shall remain associated with the confirmed record.
+- Subsequent corrections shall follow the authorized correction and audit process.
+
+---
+
+## FR-141 — Retain Source Incoming Fuel Invoice
+
+**Module ID:** STK-012
+**Priority:** High
+
+### Business Requirement
+
+The system shall retain the original incoming fuel invoice document used for OCR processing so that authorized users can compare the source document with the confirmed business information.
+
+### Acceptance Criteria
+
+- The source invoice shall remain associated with the corresponding incoming fuel invoice record.
+- Authorized users shall be able to view the retained invoice.
+- The retained source document shall not be altered as part of normal data correction.
+- Replacing or reprocessing an invoice shall be auditable.
+- Source invoice retention shall comply with the approved application retention policy.
+- Unauthorized users shall not be able to access stored invoice documents.
 
 ---
 
@@ -4070,6 +4321,54 @@ Corrections to finalized incoming fuel stock records shall be authorized and aud
 ## BR-039
 
 Historical incoming fuel stock records shall not be physically deleted through normal application operations when they are required for reporting, audit or retention purposes.
+
+---
+
+## BR-040
+
+One incoming fuel invoice may contain one or more product items.
+
+---
+
+## BR-041
+
+Incoming fuel invoice header information shall be maintained separately from individual invoice product items.
+
+---
+
+## BR-042
+
+OCR-extracted invoice information shall not become authoritative business data until reviewed and confirmed by an authorized user.
+
+---
+
+## BR-043
+
+Every confirmed incoming fuel invoice shall contain at least one valid product item.
+
+---
+
+## BR-044
+
+Every confirmed incoming fuel product item shall contain a Quantity greater than zero.
+
+---
+
+## BR-045
+
+The original incoming fuel invoice document shall remain associated with its incoming fuel stock record according to the applicable retention policy.
+
+---
+
+## BR-046
+
+Corrections made during OCR review shall not alter the original source invoice document.
+
+---
+
+## BR-047
+
+Where OCR cannot reliably extract required invoice information, an authorized user shall be able to correct or complete the information before confirmation.
 
 ---
 
@@ -4816,6 +5115,22 @@ Important changes to incoming fuel stock information shall be auditable.
 
 ---
 
+## SEC-017 — Incoming Fuel Invoice Document Security
+
+**Priority:** High
+
+Uploaded incoming fuel invoices and OCR-extracted information shall be accessible only to authorized users.
+
+### Acceptance Criteria
+
+- Invoice documents shall not be publicly accessible.
+- Access shall respect organization and station permissions.
+- Direct document URLs shall not bypass authorization.
+- OCR processing shall not expose invoice information to unauthorized users.
+- Invoice replacement, reprocessing and confirmation activities shall be auditable.
+
+---
+
 # 13. Data Retention and Archival Requirements
 
 ## RET-001 — Fourteen-Month Operational Retention
@@ -5544,6 +5859,7 @@ Reports Available
 | SCR-032 | Application Configuration | Administrator |
 | SCR-033 | User and Role Management | Administrator |
 | SCR-034 | Incoming Fuel Stock Management | Administrator, Manager |
+| SCR-035 | Incoming Fuel Invoice Capture and Review | Administrator, Manager |
 
 ---
 
@@ -6665,6 +6981,8 @@ The initial supported fuel types shall include:
 - Correct Stock Record, where authorized
 - View Audit History
 - Open Incoming Fuel Stock Report
+- Capture Incoming Fuel Invoice
+- View Source Invoice
 
 ### Search and Filter Options
 
@@ -6675,6 +6993,17 @@ The screen shall support appropriate filtering using:
 - Invoice Number
 - Invoice Date Range
 - Received Date Range
+
+### Search Result Information
+
+For each matching incoming fuel stock / invoice record, the screen shall display:
+
+- Invoice Number
+- Invoice Date
+- Fuel Product
+- Quantity Received
+- Total Invoice Amount
+- Processing / Confirmation Status
 
 ### Business Validation
 
@@ -6689,6 +7018,75 @@ The screen shall support appropriate filtering using:
 - Corrections to finalized records shall require authorization.
 - Correction reason shall be mandatory where required by the applicable business rule.
 - Incoming stock records shall remain independent from employee shift reconciliation records.
+
+---
+
+## 18.36 SCR-035 — Incoming Fuel Invoice Capture and Review
+
+### Purpose
+
+Allow authorized users to capture an incoming fuel invoice, process it using OCR, review extracted information and confirm the incoming fuel stock record.
+
+### Invoice Capture
+
+The screen shall support:
+
+- Take Invoice Photo
+- Select Existing Invoice Image
+- Preview Invoice
+- Replace Invoice
+- Submit for OCR Processing
+
+### Invoice Header
+
+The review screen shall display:
+
+- Invoice Number
+- Invoice Date
+- Invoice Time, where available
+- Total Invoice Amount
+
+### Product Details
+
+For each extracted product item:
+
+- Product Description
+- Product Code
+- Quantity
+- Unit of Measurement
+- Rate Per Unit
+- Product Value
+- Tax or Other Charges, where captured
+
+### OCR Information
+
+The screen shall display:
+
+- OCR Processing Status
+- Fields requiring review, where identifiable
+- Validation Errors
+- Source Invoice Preview
+
+### Main Actions
+
+- Process Invoice
+- Reprocess Invoice
+- Edit Extracted Information
+- Add Product Item
+- Remove Incorrect Product Item
+- Save Draft
+- Confirm Invoice
+- Cancel
+
+### Business Validation
+
+- OCR results shall not be finalized automatically.
+- Invoice Number is mandatory before confirmation.
+- Invoice Date is mandatory before confirmation.
+- At least one valid product item is mandatory.
+- Product Quantity must be greater than zero.
+- All required validation errors shall be resolved before confirmation.
+- Confirmation shall record the confirming user and date/time.
 
 ---
 
@@ -7159,20 +7557,35 @@ The report shall support appropriate filters including:
 - Invoice Number
 - Invoice Date Range
 - Received Date Range
+- Product Description
+- Product Code
 
 ### Report Information
 
-The report shall include:
+The report shall provide invoice-level and product-level incoming fuel stock information.
+
+#### Invoice Information
 
 - Fuel Station
-- Fuel Type
 - Invoice Number
 - Invoice Date
-- Received Date
-- Quantity Received
-- Remarks, where applicable
-- Created By
-- Created Date and Time
+- Invoice Time, where available
+- Total Invoice Amount
+- Confirmation Status
+- Confirmed By
+- Confirmed Date and Time
+
+#### Product Information
+
+For each product item:
+
+- Product Description
+- Product Code
+- Quantity
+- Unit of Measurement
+- Rate Per Unit
+- Product Value
+- Tax or Other Charges, where captured
 
 ### Summary Information
 
@@ -7181,6 +7594,7 @@ Where appropriate, the report shall provide:
 - Total Petrol Quantity Received
 - Total Diesel Quantity Received
 - Total Quantity Received
+- Total Invoice Value for the selected reporting period
 
 ### Report Formats
 
@@ -7370,7 +7784,7 @@ Future enhancements shall be evaluated through a formal change request and estim
 | DEC-017 | Retention Start Date | Pending Confirmation | Business date, closure date or approval date |
 | DEC-018 | Deployment Availability | Pending Confirmation | Confirm operating hours and availability target |
 | DEC-019 | Full Aadhaar Visibility | Pending Confirmation | Confirm which authorized roles may view the complete Aadhaar Number; other users shall receive masked or no Aadhaar information |
-| DEC-020 | Incoming Stock Additional Details | Pending Confirmation | Confirm whether Supplier, Invoice Amount, tanker/delivery reference or other delivery information shall also be maintained |
+| DEC-020 | Incoming Stock Additional Details | Pending Confirmation | Confirm whether Shipment Document Number, Delivery Number, transport/vehicle information, Supplier details, tax breakup and other invoice information visible on supplier invoices shall also be permanently maintained |
 
 Open decisions shall be reviewed before the relevant design or implementation is finalized.
 
@@ -7593,6 +8007,26 @@ The system shall:
 
 ---
 
+## AC-031 — Incoming Fuel Invoice OCR Processing
+
+The system shall support OCR-assisted incoming fuel invoice processing.
+
+Authorized users shall be able to:
+
+- Capture or select an invoice image.
+- Preview the invoice.
+- Submit the invoice for OCR processing.
+- Review extracted invoice header information.
+- Review one or more extracted product items.
+- Correct incorrectly extracted information.
+- Enter information that OCR could not determine.
+- Confirm the reviewed invoice.
+- View the retained source invoice later.
+
+The system shall not automatically finalize unreviewed OCR information.
+
+---
+
 # 26. Glossary
 
 | Term | Definition |
@@ -7641,6 +8075,11 @@ The system shall:
 | Invoice Date | Date shown on the invoice associated with the incoming fuel stock |
 | Received Date | Date on which the fuel station received the incoming fuel stock |
 | Quantity Received | Quantity of fuel received through an incoming fuel stock transaction |
+| Incoming Fuel Invoice | Source invoice document representing one incoming fuel delivery and containing invoice-level information and one or more product items |
+| Incoming Fuel Invoice Item | Individual fuel-product entry belonging to an incoming fuel invoice |
+| Invoice OCR | Automated extraction of invoice information from an uploaded or photographed invoice document |
+| OCR Review | User verification and correction of information extracted from an invoice before confirmation |
+| Confirmed Invoice Data | Reviewed incoming fuel invoice information accepted as authoritative business data |
 
 ---
 
@@ -7748,6 +8187,9 @@ Difference > Allowed Tolerance
 | Cash Denomination Entry | Maintain quantity-based entry for ₹500, ₹200, ₹100, ₹50, ₹20 and ₹10 notes; record all coins as one consolidated Coins amount |
 | Incoming Fuel Stock | Maintain Petrol and Diesel stock receipts as separate business records with Invoice Number, Invoice Date, Received Date and Quantity Received |
 | Incoming Fuel Stock Reporting | Provide a separate Incoming Fuel Stock Report |
+| Incoming Fuel Invoice OCR | Where possible, scan incoming fuel invoices and extract required information to reduce manual data-entry errors |
+| Invoice Verification | OCR-extracted invoice information shall be reviewed and confirmed before becoming authoritative business data |
+| Invoice Product Structure | A single incoming fuel invoice may contain multiple product items |
 
 ---
 
