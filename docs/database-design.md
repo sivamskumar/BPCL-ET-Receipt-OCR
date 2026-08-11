@@ -829,11 +829,26 @@ OCR_COMPLETED
 READINGS_CONFIRMED
 PAYMENTS_ENTERED
 RECONCILED
-SUBMITTED
+SUBMITTED_FOR_LEVEL_1_REVIEW
+RETURNED_TO_EMPLOYEE
+RESUBMITTED
+LEVEL_1_APPROVED
+LEVEL_1_APPROVED_WITH_REMARKS
+FORWARDED_FOR_LEVEL_2_APPROVAL
 APPROVED
 CLOSED
 CANCELLED
 ```
+
+Business workflow rules:
+
+- A reconciliation must be submitted before Level-1 review begins.
+- A shift returned to the employee may be corrected and resubmitted.
+- Persistent shortage or excess may proceed from Level-1 only through approval with remarks.
+- Final APPROVED status requires successful Level-2 approval.
+- Only an APPROVED shift may normally transition to CLOSED.
+- CLOSED and CANCELLED shifts shall not be modified through normal operational workflows.
+- Every workflow-status transition shall be auditable.
 
 ---
 
@@ -1523,13 +1538,14 @@ Columns:
 | accounted_amount | NUMERIC(19,2) | Yes |
 | difference_amount | NUMERIC(19,2) | Yes |
 | allowed_tolerance | NUMERIC(19,2) | Yes |
-| status | VARCHAR(40) | Yes |
+| reconciliation_status | VARCHAR(30) | Yes | Calculated result: PENDING, MATCHED, SHORTAGE, EXCESS or PENDING_REVIEW |
+| approval_workflow_status | VARCHAR(40) | Yes | Current two-level approval workflow state |
 | calculated_at | TIMESTAMPTZ | Yes |
 | calculated_by | BIGINT | Yes |
 | submitted_at | TIMESTAMPTZ | No |
 | submitted_by | BIGINT | No |
-| approved_at | TIMESTAMPTZ | No |
-| approved_by | BIGINT | No |
+| final_approved_at | TIMESTAMPTZ | No | Final Level-2 approval timestamp |
+| final_approved_by | BIGINT | No | Final Level-2 approving user |
 | remarks | VARCHAR(1000) | No |
 
 Unique constraint:
@@ -1561,10 +1577,24 @@ MATCHED
 SHORTAGE
 EXCESS
 PENDING_REVIEW
-SUBMITTED
+NOT_SUBMITTED
+PENDING_LEVEL_1_REVIEW
+RETURNED_TO_EMPLOYEE
+RESUBMITTED
+LEVEL_1_APPROVED
+LEVEL_1_APPROVED_WITH_REMARKS
+PENDING_LEVEL_2_APPROVAL
 APPROVED
 REJECTED
 ```
+
+Business rules:
+
+- `reconciliation_status` represents the calculated financial result.
+- `approval_workflow_status` represents the review/approval process.
+- Calculated reconciliation result shall not be manually overwritten.
+- Final approval requires Level-2 approval.
+- Previous submissions and approval decisions shall remain historically traceable.
 
 The system may preserve previous calculation versions instead of overwriting them.
 
@@ -1604,31 +1634,95 @@ This rule should be checked by the application before approval.
 
 ---
 
-## 15.3 `reconciliation_approval`
+## 15.3 `reconciliation_submission`
 
-Stores approval history instead of only the latest approval columns.
+Stores every employee submission and resubmission of a reconciliation for approval.
 
 Columns:
 
-| Column | Type | Required |
-|---|---|---:|
-| id | BIGINT | Yes |
-| reconciliation_id | BIGINT | Yes |
-| action | VARCHAR(30) | Yes |
-| action_by | BIGINT | Yes |
-| action_at | TIMESTAMPTZ | Yes |
-| remarks | VARCHAR(1000) | No |
+| Column | Type | Required | Description |
+|---|---|---:|---|
+| id | BIGINT | Yes | Primary key |
+| reconciliation_id | BIGINT | Yes | Parent reconciliation |
+| submission_number | INTEGER | Yes | Sequential submission number |
+| submission_type | VARCHAR(20) | Yes | INITIAL or RESUBMISSION |
+| submitted_by | BIGINT | Yes | User submitting reconciliation |
+| submitted_at | TIMESTAMPTZ | Yes | Submission timestamp |
+| remarks | VARCHAR(1000) | No | Submission remarks |
+
+Unique constraint:
+
+```text
+reconciliation_id + submission_number
+```
+
+Checks:
+
+```text
+submission_number > 0
+
+submission_type IN (
+    'INITIAL',
+    'RESUBMISSION'
+)
+```
+
+Business rules:
+
+- Initial submission shall use Submission Number 1.
+- Every resubmission shall increment the submission number.
+- Previous submissions shall remain available.
+- A new submission shall not delete previous reviewer or approver decisions.
+- Submission records shall be append-only.
+
+---
+
+## 15.4 `approval_decision`
+
+Stores each Level-1 or Level-2 approval workflow decision.
+
+Columns:
+
+| Column | Type | Required | Description |
+|---|---|---:|---|
+| id | BIGINT | Yes | Primary key |
+| reconciliation_id | BIGINT | Yes | Parent reconciliation |
+| submission_number | INTEGER | Yes | Submission being acted upon |
+| approval_level | VARCHAR(20) | Yes | LEVEL_1 or LEVEL_2 |
+| action | VARCHAR(40) | Yes | Approval workflow action |
+| acted_by | BIGINT | Yes | Reviewer or Approver |
+| acted_at | TIMESTAMPTZ | Yes | Decision timestamp |
+| remarks | VARCHAR(1000) | No | Approval remarks |
+| reason | VARCHAR(1000) | No | Return/rejection reason |
+| previous_workflow_status | VARCHAR(40) | Yes | State before decision |
+| new_workflow_status | VARCHAR(40) | Yes | State after decision |
+
+Approval levels:
+
+```text
+LEVEL_1
+LEVEL_2
+```
 
 Actions:
 
 ```text
 SUBMITTED
+RETURNED_TO_EMPLOYEE
+RESUBMITTED
 APPROVED
+APPROVED_WITH_REMARKS
 REJECTED
-RETURNED_FOR_CORRECTION
 ```
 
-This table is append-only.
+Business rules:
+
+- Level-1 actions require REVIEWER authorization.
+- Level-2 actions require APPROVER authorization.
+- Return or rejection requires a reason.
+- Approval with remarks requires remarks.
+- Approval decisions shall never be overwritten or deleted.
+- The same user shall not perform prohibited approval actions where segregation rules apply.
 
 ---
 
@@ -1974,7 +2068,12 @@ INCOMING_FUEL_INVOICE_CANCELLED
 ADJUSTMENT_CREATED
 RECONCILIATION_CALCULATED
 RECONCILIATION_SUBMITTED
-RECONCILIATION_APPROVED
+RECONCILIATION_RETURNED
+RECONCILIATION_RESUBMITTED
+LEVEL_1_APPROVED
+LEVEL_1_APPROVED_WITH_REMARKS
+LEVEL_2_APPROVED
+LEVEL_2_REJECTED
 SHIFT_CLOSED
 ```
 
@@ -2085,8 +2184,14 @@ receipt
 
 reconciliation
     ├── employee_reconciliation
-    ├── reconciliation_approval
+    ├── reconciliation_submission
+    ├── approval_decision
     └── generated_report
+
+application_user
+    ├── reconciliation_submission.submitted_by
+    ├── approval_decision.acted_by
+    └── reconciliation.final_approved_by
 
 incoming_fuel_invoice
     ├── incoming_fuel_invoice_item
@@ -2140,9 +2245,13 @@ incoming_fuel_invoice_document
 incoming_fuel_invoice_ocr_result
 incoming_fuel_invoice_ocr_field
 incoming_fuel_invoice_review
+reconciliation_submission
+approval_decision
 ```
 
 Confirmed incoming fuel invoices and their associated source documents, OCR results and review history shall not be physically deleted through normal application operations.
+
+Reconciliation submissions and approval decisions are append-only workflow-history records and shall not be physically deleted or updated through normal application operations.
 
 Recommended foreign-key behaviour:
 
@@ -2272,6 +2381,13 @@ idx_reconciliation_shift
 idx_reconciliation_status
 idx_reconciliation_calculated_at
 idx_employee_reconciliation_employee
+idx_reconciliation_workflow_status
+idx_reconciliation_submission_reconciliation
+idx_reconciliation_submission_submitted_at
+idx_approval_decision_reconciliation
+idx_approval_decision_submission
+idx_approval_decision_level
+idx_approval_decision_acted_at
 ```
 
 ## Audit indexes
@@ -2319,7 +2435,14 @@ The database should enforce these rules wherever possible:
 26. A confirmed incoming fuel invoice must contain at least one valid product item.
 27. Confirmed incoming fuel product quantities must be greater than zero.
 28. OCR-extracted information must not become authoritative business data without authorized review and confirmation.
-
+29. Submission numbers must be unique within a reconciliation.
+30. Every approval decision must reference an existing reconciliation submission.
+31. Level-1 actions may only be performed by an authorized Reviewer.
+32. Level-2 actions may only be performed by an authorized Approver.
+33. Return and rejection decisions require a reason.
+34. Approval with remarks requires remarks.
+35. Final reconciliation approval requires successful Level-2 approval.
+36. Approval decisions and reconciliation submissions are append-only historical records.
 
 Rules involving date-range overlap may require PostgreSQL exclusion constraints or application-level transactional validation.
 
@@ -2458,13 +2581,54 @@ Update shift status
 Write audit event
 ```
 
-## Approve reconciliation
+## Submit reconciliation
+
+```text
+Validate reconciliation completeness
+Validate employee submission authority
+Create reconciliation_submission with submission number
+Update approval workflow status to PENDING_LEVEL_1_REVIEW
+Update shift status to SUBMITTED_FOR_LEVEL_1_REVIEW
+Write audit event
+```
+
+## Return reconciliation to employee
+
+```text
+Validate Reviewer authority
+Validate current workflow state
+Validate mandatory reason
+Create approval_decision
+Update approval workflow status to RETURNED_TO_EMPLOYEE
+Update shift status to RETURNED_TO_EMPLOYEE
+Write audit event
+```
+
+## Resubmit reconciliation
+
+```text
+Validate employee correction and resubmission authority
+Create new reconciliation_submission
+Increment submission number
+Update approval workflow status to RESUBMITTED
+Update shift status to RESUBMITTED
+Write audit event
+```
+
+## Process approval decision
 
 ```text
 Validate current reconciliation version
-Create approval-history record
-Update reconciliation status
-Update shift status
+Validate approval level and user authority
+Validate segregation rules
+Validate remarks or reason where required
+Create approval_decision
+Update reconciliation approval workflow status
+Update shift workflow status
+If Level-2 approves:
+    Record final_approved_by
+    Record final_approved_at
+    Update workflow status to APPROVED
 Write audit event
 ```
 
@@ -2488,6 +2652,7 @@ fuel_price
 shift
 employee_shift_hours
 receipt
+reconciliation
 incoming_fuel_invoice
 payment_entry
 cash_denomination_entry
@@ -2589,25 +2754,41 @@ The application must prevent path traversal and must not use an untrusted origin
 
 # 26. Data Retention
 
-Suggested initial retention policy:
+The application shall retain operational and transaction data for a minimum configurable period initially set to **14 months**, according to the approved business requirement.
+
+Suggested initial retention classification:
 
 ```text
-Master data                       Indefinite
-Shift data                        Indefinite unless policy says otherwise
-Receipt images                    Configurable, initially indefinite
-OCR output                        Same retention as receipt
-Manual corrections               Indefinite
-Reconciliation results            Indefinite
-Audit events                      Minimum policy-defined period
-Generated reports                 Configurable
-Authentication event history      Policy-defined period
-Incoming fuel invoices             Same approved operational retention policy
-Incoming fuel invoice documents    Same retention as invoice
-Incoming fuel invoice OCR output   Same retention as invoice
-Incoming fuel invoice reviews      Same retention as invoice
+Master data                           Indefinite while required
+Employee master/profile data          According to employment and legal retention requirements
+
+Shift data                            Minimum 14 months
+Employee shift-hours data             Minimum 14 months
+Receipt images                        Minimum 14 months
+Receipt OCR output                    Minimum 14 months
+Manual corrections                    Minimum 14 months
+Fuel sales calculations               Minimum 14 months
+Payment and collection data           Minimum 14 months
+Reconciliation results                Minimum 14 months
+Reconciliation submissions            Minimum 14 months
+Approval decisions                    Minimum 14 months
+Incoming fuel invoices                Minimum 14 months
+Incoming fuel invoice documents       Minimum 14 months
+Incoming fuel invoice OCR output      Minimum 14 months
+Incoming fuel invoice reviews         Minimum 14 months
+
+Audit events                           At least the operational retention period,
+                                       subject to security/audit requirements
+
+Generated reports                      Configurable according to reporting policy
+Authentication event history           Policy-defined
 ```
 
-Deletion and archival rules should be confirmed before production deployment.
+The 14-month period shall be configurable where permitted by the approved business policy.
+
+Retention expiry shall not automatically imply immediate physical deletion. Archival, deletion and legal/audit hold procedures shall be defined before production deployment.
+
+Master-data records referenced by retained transaction history shall remain available or be preserved through historical snapshots.
 
 ---
 
@@ -2798,6 +2979,7 @@ The following decisions will be finalized later:
 12. Whether deleted or cancelled transaction data needs dedicated archival tables.
 13. Whether supplier name, shipment document number, delivery number, vehicle details and detailed tax breakup must be permanently maintained for incoming fuel invoices.
 14. The final uniqueness rule for supplier invoice numbers across organization, station and supplier boundaries.
+15. Whether approval workflow statuses and actions remain VARCHAR business codes or are implemented through reference tables.
 
 ---
 
@@ -2839,6 +3021,8 @@ adjustment
 fuel_sale
 reconciliation
 employee_reconciliation
+reconciliation_submission
+approval_decision
 audit_event
 ```
 
