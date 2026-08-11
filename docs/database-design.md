@@ -659,9 +659,6 @@ Initial INR values:
 50
 20
 10
-5
-2
-1
 ```
 
 Unique constraint:
@@ -669,6 +666,14 @@ Unique constraint:
 ```text
 currency_code + denomination_value
 ```
+
+Business rules:
+
+- `cash_denomination` represents supported currency-note denominations.
+- The initial supported note denominations are ₹500, ₹200, ₹100, ₹50, ₹20 and ₹10.
+- ₹5, ₹2 and ₹1 shall not be maintained as individual cash-denomination entries.
+- Coin values shall be recorded through the consolidated `coins_entry`.
+- Denomination configuration changes must not alter historical cash entries.
 
 ---
 
@@ -1278,7 +1283,7 @@ amount >= 0
 
 ## 13.2 `cash_denomination_entry`
 
-Stores cash denomination counts per employee and shift.
+Stores the quantity and calculated monetary amount for one supported currency-note denomination held by an employee during a shift.
 
 Columns:
 
@@ -1320,9 +1325,79 @@ calculated_amount =
 
 The backend must calculate this value rather than trusting the browser.
 
+Business rules:
+
+- Quantity must be a non-negative whole number.
+- calculated_amount shall equal the configured denomination value multiplied by quantity.
+- Calculated Amount shall not be manually entered by the user.
+- Only active/configured note denominations may be selected for new entries.
+- Duplicate denomination entries for the same employee and shift are not allowed.
+- Coin amounts shall not be stored in cash_denomination_entry.
+- Historical entries shall retain their original denomination meaning even when denomination configuration later changes.
+
 ---
 
-## 13.3 `credit_sale`
+## 13.3 `coins_entry`
+
+Stores the consolidated monetary value of all coins held by an employee during a shift.
+
+Columns:
+
+| Column | Type | Required | Description |
+|---|---|---:|---|
+| id | BIGINT | Yes | Primary key |
+| shift_id | BIGINT | Yes | Operational shift |
+| employee_id | BIGINT | Yes | Employee |
+| amount | NUMERIC(14,2) | Yes | Consolidated Coins Amount |
+| entered_at | TIMESTAMPTZ | Yes | Entry timestamp |
+| entered_by | BIGINT | Yes | User entering the amount |
+| updated_at | TIMESTAMPTZ | No | Last update timestamp |
+| updated_by | BIGINT | No | User performing last update |
+| version | BIGINT | Yes | Optimistic-lock version |
+
+Unique constraint:
+
+```text
+shift_id + employee_id
+```
+
+Check:
+
+```text
+amount >= 0
+```
+
+Business rules:
+
+- One consolidated Coins Amount shall be maintained for each employee within a shift.
+- The Coins Amount is entered directly and is not calculated from denomination quantities.
+- Individual ₹5, ₹2 and ₹1 quantities are not required.
+- Zero is a valid Coins Amount.
+- The Coins Amount participates directly in Cash Total calculation.
+- Changes after protected workflow stages shall follow the applicable correction and audit rules.
+
+---
+
+## 13.4 Cash Total Calculation
+
+```text
+Total Notes Amount =
+    SUM(cash_denomination_entry.calculated_amount)
+
+Cash Total =
+    Total Notes Amount
+  + coins_entry.amount
+
+Total Collections =
+    Cash Total
+  + UPI Total
+  + Card Total
+  + Credit Total
+```
+
+---
+
+## 13.5 `credit_sale`
 
 Stores customer credit transactions.
 
@@ -1590,6 +1665,9 @@ END_RECEIPT_UPLOADED
 OCR_COMPLETED
 READING_CORRECTED
 PAYMENT_ENTERED
+CASH_DENOMINATION_ENTERED
+COINS_AMOUNT_ENTERED
+CASH_ENTRY_UPDATED
 ADJUSTMENT_CREATED
 RECONCILIATION_CALCULATED
 RECONCILIATION_SUBMITTED
@@ -1672,6 +1750,7 @@ employee
     ├── employee_shift_hours
     ├── payment_entry
     ├── cash_denomination_entry
+    ├── coins_entry
     ├── credit_sale
     ├── adjustment
     └── employee_reconciliation
@@ -1684,6 +1763,7 @@ shift
     ├── fuel_sale
     ├── payment_entry
     ├── cash_denomination_entry
+    ├── coins_entry
     ├── credit_sale
     ├── adjustment
     └── reconciliation
@@ -1795,6 +1875,9 @@ idx_employee_shift_hours_status
 
 idx_employee_shift_hours_correction_record
 idx_employee_shift_hours_correction_corrected_at
+
+idx_coins_entry_shift
+idx_coins_entry_employee
 ```
 
 ## Receipt indexes
@@ -1865,6 +1948,9 @@ The database should enforce these rules wherever possible:
 16. One employee has at most one employee-shift-hours record per operational shift.
 17. Date of Leaving cannot precede Date of Joining.
 18. LEFT employees must have a Date of Leaving.
+19. One cash-denomination entry exists at most once for each shift, employee and denomination.
+20. One consolidated Coins entry exists at most once for each employee within a shift.
+21. Coins Amount must be zero or greater.
 
 Rules involving date-range overlap may require PostgreSQL exclusion constraints or application-level transactional validation.
 
@@ -1933,11 +2019,17 @@ Write audit event
 ## Submit payment entries
 
 ```text
-Save cash denominations
-Save UPI/card entries
-Save credit transactions
-Save adjustments
-Update shift status
+Validate shift state
+Validate employee participation
+Validate note-denomination quantities
+Calculate note-denomination amounts
+Persist cash-denomination entries
+Validate consolidated Coins Amount
+Persist Coins entry
+Record UPI payments
+Record card payments
+Record credit sales
+Calculate payment summary
 Write audit event
 ```
 
@@ -1962,6 +2054,7 @@ Update reconciliation status
 Update shift status
 Write audit event
 ```
+
 # 23. Concurrency and Optimistic Locking
 
 Important mutable tables should contain:
@@ -1984,6 +2077,7 @@ employee_shift_hours
 receipt
 payment_entry
 cash_denomination_entry
+coins_entry
 credit_sale
 adjustment
 application_user
@@ -2136,9 +2230,6 @@ INR 100
 INR 50
 INR 20
 INR 10
-INR 5
-INR 2
-INR 1
 ```
 
 Reference data migrations should use stable business codes.
@@ -2279,6 +2370,7 @@ receipt
 receipt_nozzle_reading
 payment_entry
 cash_denomination_entry
+coins_entry
 credit_sale
 adjustment
 fuel_sale
