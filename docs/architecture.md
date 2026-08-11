@@ -68,7 +68,7 @@ The architecture must provide:
 - Traceable employee working-hour records
 - Separation of OCR-extracted data from confirmed business data
 - Multi-level approval workflow with immutable decision history
-- - Configurable operational data retention with an initial minimum period of fourteen months
+- Configurable operational data retention with an initial minimum period of fourteen months
 
 ---
 
