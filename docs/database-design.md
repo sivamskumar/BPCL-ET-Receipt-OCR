@@ -493,7 +493,7 @@ The schema must not permanently restrict a dispenser unit to four nozzles.
 
 ## 8.6 `employee`
 
-Represents an employee participating in station operations.
+Represents an employee participating in station operations and stores the employee's maintained employment profile.
 
 Columns:
 
@@ -504,8 +504,17 @@ Columns:
 | employee_code | VARCHAR(30) | Yes | Business employee code |
 | employee_name | VARCHAR(150) | Yes | Employee name |
 | mobile_number | VARCHAR(30) | No | Contact number |
-| email_address | VARCHAR(150) | No | Email |
-| active | BOOLEAN | Yes | Active status |
+| email_address | VARCHAR(150) | No | Email address |
+| aadhaar_number | VARCHAR(20) | No | Protected Aadhaar value |
+| address_line_1 | VARCHAR(200) | No | Residential address |
+| address_line_2 | VARCHAR(200) | No | Additional address |
+| city | VARCHAR(100) | No | City |
+| state | VARCHAR(100) | No | State |
+| postal_code | VARCHAR(20) | No | Postal code |
+| photograph_storage_path | VARCHAR(1000) | No | Secure employee photograph reference |
+| date_of_joining | DATE | Yes | Employee joining date |
+| date_of_leaving | DATE | No | Employee leaving date |
+| employment_status | VARCHAR(20) | Yes | ACTIVE, INACTIVE or LEFT |
 | created_at | TIMESTAMPTZ | Yes | Creation timestamp |
 | created_by | BIGINT | No | Creating user |
 | updated_at | TIMESTAMPTZ | No | Update timestamp |
@@ -518,14 +527,35 @@ Unique constraint:
 organization_id + employee_code
 ```
 
-Examples:
+Initial employment statuses:
 
 ```text
-Sujith
-Sonu
+ACTIVE
+INACTIVE
+LEFT
 ```
 
-Employee names are data, not hardcoded rules.
+Checks:
+
+```text
+date_of_leaving IS NULL OR date_of_leaving >= date_of_joining
+employment_status IN ('ACTIVE', 'INACTIVE', 'LEFT')
+```
+
+Business rules:
+
+- `employee_code` must be unique within the organization.
+- `employee_name` must not be blank.
+- `date_of_joining` is mandatory.
+- `date_of_leaving` is mandatory when `employment_status = LEFT`.
+- INACTIVE and LEFT employees cannot participate in new operational shifts or receive new nozzle assignments.
+- Historical employee-linked transactions must remain unchanged when employment status changes.
+- Employee records referenced by historical transactions must not be physically deleted through normal application operations.
+- Aadhaar information must be treated as sensitive personal information.
+- Aadhaar must not be exposed through ordinary logs or unrestricted reports.
+- Employee photograph access must be controlled by application authorization.
+
+Example employees such as Sujith and Sonu are data, not hardcoded business rules.
 
 ---
 
@@ -694,6 +724,8 @@ Initial roles:
 
 ```text
 EMPLOYEE
+REVIEWER
+APPROVER
 SUPERVISOR
 MANAGER
 ADMINISTRATOR
@@ -824,9 +856,111 @@ shift_id + employee_id
 
 Snapshot fields preserve historical identity if employee master data changes.
 
+Additional business rules:
+
+- Only employees with `employment_status = ACTIVE` may be added to a new shift.
+- A later employee status change must not alter the `employee_code_snapshot` or `employee_name_snapshot`.
+- Employee working-time information shall be maintained in `employee_shift_hours`, not directly in `shift_employee`.
+
 ---
 
-## 10.3 `shift_nozzle_assignment`
+## 10.3 `employee_shift_hours`
+
+Stores the actual working period of an employee participating in an operational shift.
+
+Columns:
+
+| Column | Type | Required | Description |
+|---|---|---:|---|
+| id | BIGINT | Yes | Primary key |
+| shift_id | BIGINT | Yes | Operational shift |
+| shift_employee_id | BIGINT | Yes | Participating shift employee |
+| employee_id | BIGINT | Yes | Employee |
+| started_at | TIMESTAMPTZ | Yes | Employee working start |
+| ended_at | TIMESTAMPTZ | No | Employee working end |
+| total_duration_minutes | INTEGER | No | Derived working duration |
+| status | VARCHAR(20) | Yes | STARTED, COMPLETED or CORRECTED |
+| remarks | VARCHAR(1000) | No | Operational remarks |
+| created_at | TIMESTAMPTZ | Yes | Creation timestamp |
+| created_by | BIGINT | Yes | Creating user |
+| updated_at | TIMESTAMPTZ | No | Last update |
+| updated_by | BIGINT | No | Updating user |
+| version | BIGINT | Yes | Optimistic-lock version |
+
+Unique constraint:
+
+```text
+shift_id + employee_id
+```
+
+Checks:
+
+```text
+ended_at IS NULL OR ended_at >= started_at
+
+total_duration_minutes IS NULL
+OR total_duration_minutes >= 0
+
+status IN (
+    'STARTED',
+    'COMPLETED',
+    'CORRECTED'
+)
+```
+
+Business rules:
+
+- The employee must exist in `shift_employee` for the same shift.
+- Employee working time is maintained independently from the overall shift start and end time.
+- Working periods crossing midnight are valid.
+- `total_duration_minutes` shall be calculated from `started_at` and `ended_at`.
+- The application shall not trust a browser-supplied calculated duration.
+- A completed employee shift-hours record may only be corrected through an authorized process.
+- Corrections shall preserve audit history and correction reasons.
+- Historical employee shift-hours records remain available after an employee becomes INACTIVE or LEFT.
+
+---
+
+## 10.4 `employee_shift_hours_correction`
+
+Stores authorized corrections to completed employee working-time records.
+
+Columns:
+
+| Column | Type | Required | Description |
+|---|---|---:|---|
+| id | BIGINT | Yes | Primary key |
+| employee_shift_hours_id | BIGINT | Yes | Corrected employee shift-hours record |
+| previous_started_at | TIMESTAMPTZ | Yes | Previous start time |
+| previous_ended_at | TIMESTAMPTZ | No | Previous end time |
+| corrected_started_at | TIMESTAMPTZ | Yes | Corrected start time |
+| corrected_ended_at | TIMESTAMPTZ | No | Corrected end time |
+| previous_duration_minutes | INTEGER | No | Previous calculated duration |
+| corrected_duration_minutes | INTEGER | No | Corrected calculated duration |
+| correction_reason | VARCHAR(1000) | Yes | Mandatory business reason |
+| corrected_by | BIGINT | Yes | User performing correction |
+| corrected_at | TIMESTAMPTZ | Yes | Correction timestamp |
+
+Checks:
+
+```text
+corrected_ended_at IS NULL
+OR corrected_ended_at >= corrected_started_at
+
+previous_duration_minutes IS NULL
+OR previous_duration_minutes >= 0
+
+corrected_duration_minutes IS NULL
+OR corrected_duration_minutes >= 0
+```
+
+This table is append-only.
+
+Correction records must not be updated or deleted through normal application operations.
+
+---
+
+## 10.5 `shift_nozzle_assignment`
 
 Stores the exact nozzle assignment used by the shift.
 
@@ -1535,6 +1669,7 @@ nozzle
 employee
     ├── nozzle_assignment
     ├── shift_employee
+    ├── employee_shift_hours
     ├── payment_entry
     ├── cash_denomination_entry
     ├── credit_sale
@@ -1544,6 +1679,7 @@ employee
 shift
     ├── shift_employee
     ├── shift_nozzle_assignment
+    ├── employee_shift_hours
     ├── receipt
     ├── fuel_sale
     ├── payment_entry
@@ -1551,6 +1687,12 @@ shift
     ├── credit_sale
     ├── adjustment
     └── reconciliation
+
+shift_employee
+    └── employee_shift_hours
+
+employee_shift_hours
+    └── employee_shift_hours_correction
 
 receipt
     ├── receipt_nozzle_reading
@@ -1630,6 +1772,9 @@ idx_dispenser_unit_station_active
 idx_dispenser_unit_normalized_serial
 idx_nozzle_dispenser_active
 idx_employee_organization_active
+idx_employee_organization_status
+idx_employee_joining_date
+idx_employee_leaving_date
 idx_nozzle_assignment_nozzle_dates
 idx_nozzle_assignment_employee_dates
 idx_fuel_price_station_fuel_dates
@@ -1642,6 +1787,14 @@ idx_shift_station_business_date
 idx_shift_dispenser_business_date
 idx_shift_status
 idx_shift_created_by
+
+idx_employee_shift_hours_shift
+idx_employee_shift_hours_employee
+idx_employee_shift_hours_started_at
+idx_employee_shift_hours_status
+
+idx_employee_shift_hours_correction_record
+idx_employee_shift_hours_correction_corrected_at
 ```
 
 ## Receipt indexes
@@ -1709,6 +1862,9 @@ The database should enforce these rules wherever possible:
 13. A shift and employee have at most one denomination row per denomination.
 14. A reconciliation has one employee reconciliation per employee.
 15. Usernames are unique within an organization.
+16. One employee has at most one employee-shift-hours record per operational shift.
+17. Date of Leaving cannot precede Date of Joining.
+18. LEFT employees must have a Date of Leaving.
 
 Rules involving date-range overlap may require PostgreSQL exclusion constraints or application-level transactional validation.
 
@@ -1723,8 +1879,34 @@ The following operations should execute within database transactions:
 ```text
 Create shift
 Resolve active nozzle assignments
+Validate participating employees are ACTIVE
 Create shift employee snapshots
+Create employee shift-hours records where applicable
 Create shift nozzle-assignment snapshots
+```
+
+## Complete employee working period
+
+```text
+Load employee shift-hours record
+Validate employee participation
+Validate employee end time
+Calculate total duration
+Update employee shift-hours status
+Write audit event
+```
+
+## Correct employee shift hours
+
+```text
+Load completed employee shift-hours record
+Validate correction authority
+Validate mandatory correction reason
+Create employee_shift_hours_correction record
+Apply corrected start or end time
+Recalculate duration
+Update status
+Write audit event
 ```
 
 ## Confirm receipt readings
@@ -1780,9 +1962,6 @@ Update reconciliation status
 Update shift status
 Write audit event
 ```
-
----
-
 # 23. Concurrency and Optimistic Locking
 
 Important mutable tables should contain:
@@ -1801,6 +1980,7 @@ employee
 nozzle_assignment
 fuel_price
 shift
+employee_shift_hours
 receipt
 payment_entry
 cash_denomination_entry
@@ -1824,6 +2004,9 @@ WHERE id = ?
 If no row is updated, another user changed the record and the operation must be retried or rejected.
 
 ---
+---
+
+
 
 # 24. Receipt File Storage
 
@@ -1936,6 +2119,8 @@ DIESEL
 
 ```text
 EMPLOYEE
+REVIEWER
+APPROVER
 SUPERVISOR
 MANAGER
 ADMINISTRATOR
@@ -2087,6 +2272,8 @@ role
 user_role
 shift
 shift_employee
+employee_shift_hours
+employee_shift_hours_correction
 shift_nozzle_assignment
 receipt
 receipt_nozzle_reading
