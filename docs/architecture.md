@@ -68,7 +68,7 @@ The architecture must provide:
 - Traceable employee working-hour records
 - Separation of OCR-extracted data from confirmed business data
 - Multi-level approval workflow with immutable decision history
-- Configurable operational data-retention policies
+- - Configurable operational data retention with an initial minimum period of fourteen months
 
 ---
 
@@ -746,7 +746,9 @@ Responsibilities:
 - PDF exports
 - Audit-event storage
 - Manual correction history
-- Historical search
+- Retention-aware historical search
+- Authorized access to retained operational history
+- Preservation of audit history throughout the applicable retention period
 
 Principal concepts:
 
@@ -958,6 +960,44 @@ Incoming Fuel Invoice
         |       +-- OCR Field Results
         |
         +-- Review History
+```
+
+### Data retention architecture
+
+Operational and transaction data shall be retained for at least fourteen months according to the approved business requirement.
+
+The retention period shall be configurable by an authorized administrator, subject to client policy.
+
+Retention eligibility shall use a clearly defined business date or applicable transaction/event timestamp.
+
+Changing the configured retention period shall not immediately delete existing data.
+
+Records involved in an active investigation, audit requirement or authorized hold shall not be removed by the normal retention process.
+
+Expired data shall only be archived or deleted through an authorized controlled process.
+
+The final archive-versus-delete policy after the retention period remains subject to client confirmation.
+
+Retention processing must preserve referential consistency between related business records and externally stored documents.
+
+For example:
+
+```text
+Shift
+    +-- Receipt metadata
+    +-- Receipt images
+    +-- OCR results
+    +-- Payment entries
+    +-- Reconciliation
+    +-- Submission and approval history
+    +-- Audit history
+
+Incoming Fuel Invoice
+    +-- Product items
+    +-- Source invoice documents
+    +-- OCR results
+    +-- Review history
+```
 
 ---
 
@@ -1100,6 +1140,9 @@ Security responsibilities include:
 - Protection of employee personal information
 - Controlled access to employee photographs
 - Prevention of sensitive employee information in application logs
+- Authorization of retention-policy configuration
+- Protection of retained and archived operational information
+- Restricted access to backup and recovery data
 
 Approval-security rules:
 
@@ -1111,6 +1154,10 @@ Approval-security rules:
 - Return and rejection actions require the appropriate business reason.
 - Approval with remarks requires remarks where required by the workflow.
 - Authorization must be enforced by the backend and must not rely only on frontend controls.
+
+Retention configuration changes, archival operations and controlled data-disposal operations must require appropriate authorization and must be auditable.
+
+Backup copies and archived business information must receive security protection appropriate to the sensitivity of the original production data.
 
 Spring Security shall enforce authentication and coarse-grained authorization.
 
@@ -1159,6 +1206,14 @@ The system should record important events, including:
 - Incoming fuel invoice review
 - Incoming fuel invoice confirmation
 - Incoming fuel invoice cancellation
+- Retention configuration change
+- Data archival execution
+- Controlled data-disposal execution
+- Backup or recovery administrative activity where applicable
+
+Retention and disposal audit information must identify the acting user or system process, action performed, applicable data scope, date and time, and result.
+
+Retention-policy changes shall not silently alter or remove historical audit evidence.
 
 Audit records should include:
 
@@ -1213,16 +1268,66 @@ Spring Boot Backend
           +---- Incoming Fuel Invoices
 ```
 
-Receipt images and incoming fuel invoice documents may initially share the same secured storage infrastructure while remaining logically separated by document type and storage path.
+The application is intended to operate as a centralized web application accessible through approved networks and supported browsers.
+
+Receipt images and incoming fuel invoice documents may initially share the same secured document-storage infrastructure while remaining logically separated by document type and storage path.
 
 The storage abstraction should permit future migration to cloud object storage without changing domain logic.
 
-Possible deployment environments:
+Production deployment must provide:
 
-- Local office server
-- Company data centre
-- Cloud virtual machine
-- Containerized Docker deployment
+- HTTPS
+- Secure application configuration
+- Protected database connectivity
+- Protected document storage
+- Backup and recovery capability
+- Application and operational logging
+- Environment-specific secrets
+- Appropriate monitoring
+- Controlled administrative access
+
+The final production hosting model remains subject to client confirmation.
+
+Possible hosting models include:
+
+- Client office server
+- Client data-centre server
+- Central head-office server
+- Cloud-hosted server
+- Approved managed hosting environment
+
+The architecture shall avoid unnecessary coupling to a specific hosting provider until the hosting decision is finalized.
+
+### Backup and recovery architecture
+
+A complete production backup must include both database data and externally stored business documents.
+
+Backup scope shall include:
+
+```text
+PostgreSQL Database
+Receipt Image Storage
+Incoming Fuel Invoice Document Storage
+Application Configuration required for recovery
+```
+
+A database backup alone is not a complete system backup because receipt images and incoming fuel invoice documents are stored externally.
+
+Database records and document storage should be backed up in a manner that permits consistent restoration.
+
+Production backup and recovery design must define:
+
+Backup frequency
+Backup retention
+Backup access controls
+Encryption where appropriate
+Restore procedures
+Restore testing
+Recovery responsibilities
+Backup-failure monitoring
+Point-in-time recovery where required
+
+Recovery-time and recovery-point objectives shall be finalized with the client before production deployment.
 
 ---
 
@@ -1336,6 +1441,9 @@ The system will include:
 - Mandatory remarks for persistent shortage or excess
 - Approval segregation rules
 - Prevention of invalid workflow transitions
+- Retention eligibility calculation
+- Retention hold/exclusion rules
+- Retention configuration validation
 
 ### Integration tests
 
@@ -1358,6 +1466,10 @@ The system will include:
 - Approver authorization
 - Workflow-state updates
 - Approval audit-event persistence
+- Retention configuration persistence
+- Retention eligibility queries
+- Controlled archival/disposal workflow
+- Database and document-storage consistency
 
 ### Frontend tests
 
@@ -1423,6 +1535,17 @@ Confirm incoming fuel invoice
 Search confirmed invoice
 View incoming fuel stock report
 ```
+
+### Operational recovery tests
+
+Production-readiness testing shall include:
+
+- Database backup verification
+- Receipt-document backup verification
+- Incoming fuel invoice document backup verification
+- Database restore testing
+- Document-storage restore testing
+- Database/document consistency verification after recovery
 
 ---
 
@@ -1531,6 +1654,27 @@ Reason:
 - Previous decisions must not be silently overwritten
 - Audit and dispute investigation require actor, timestamp, reason and workflow transition history
 
+### Decision 12: Configurable retention with controlled archival or disposal
+
+Reason:
+
+- The approved initial operational retention period is at least fourteen months
+- Retention must be configurable subject to client policy
+- Configuration changes must not immediately delete business data
+- Records under investigation or authorized hold must be protected
+- Archival and disposal must be controlled and auditable
+- The final archive-versus-delete policy remains subject to client confirmation
+
+### Decision 13: Abstract document storage from physical hosting
+
+Reason:
+
+- Receipt images and incoming fuel invoices are stored outside PostgreSQL
+- Initial deployment may use secured file-system storage
+- The final production hosting model remains subject to client confirmation
+- Future cloud object storage should not require domain-layer changes
+- Backup and recovery must include both database records and external documents
+
 ---
 
 ## 21. Future Enhancements
@@ -1540,7 +1684,7 @@ The architecture should support future capabilities such as:
 - Multiple organizations
 - Multiple fuel-station chains
 - Android or iOS mobile applications
-- Offline receipt capture
+- Offline receipt and invoice capture
 - Cloud object storage
 - Email and SMS notifications
 - Advanced automated approval recommendations and configurable approval levels beyond the initial two-level workflow
@@ -1553,15 +1697,48 @@ The architecture should support future capabilities such as:
 
 ---
 
-## 22. Next Design Documents
+## 22. Documentation and Implementation Roadmap
 
-The following documents should be created next:
+The core business and technical design baseline currently includes:
 
 ```text
+docs/business-requirements.md
+docs/architecture.md
 docs/domain-model.md
 docs/database-design.md
+```
+
+The next detailed design documents should include:
+
+```text
 docs/api-design.md
 docs/security-design.md
 ```
+Additional implementation-oriented documentation may be introduced as required, including:
 
-The immediate next step is to design the domain model before restructuring the Java project.
+```text
+docs/deployment-design.md
+docs/backup-recovery-design.md
+docs/testing-strategy.md
+```
+
+After the architecture, domain model and database design are synchronized with the approved business requirements, the implementation can proceed with:
+
+Backend and frontend project restructuring.
+Spring Boot backend configuration.
+React frontend initialization.
+PostgreSQL and Flyway integration.
+Security foundation.
+Initial database migrations.
+Repository and persistence adapters.
+REST API design and implementation.
+OCR infrastructure integration.
+Incremental business-feature implementation and testing.
+
+Open business decisions must be resolved before implementation of the affected areas is finalized.
+
+
+
+
+
+
