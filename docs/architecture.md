@@ -232,7 +232,14 @@ Example use cases:
 - Confirm receipt readings
 - Enter payment collections
 - Calculate reconciliation
-- Approve reconciliation
+- Submit reconciliation for Level-1 review
+- Return reconciliation to employee for correction
+- Resubmit reconciliation
+- Perform Level-1 review
+- Approve with remarks where required
+- Forward reconciliation for Level-2 approval
+- Perform Level-2 approval
+- Reject or return reconciliation at Level-2
 - Generate reports
 - Maintain employee profile
 - Record employee working period
@@ -291,6 +298,11 @@ CashDenominationEntry
 CoinsEntry
 Adjustment
 Reconciliation
+ReconciliationSubmission
+ApprovalDecision
+ApprovalWorkflowStatus
+ApprovalLevel
+ApprovalAction
 IncomingFuelInvoice
 IncomingFuelInvoiceItem
 IncomingFuelInvoiceDocument
@@ -443,10 +455,26 @@ OCR_COMPLETED
 READINGS_CONFIRMED
 PAYMENTS_ENTERED
 RECONCILED
+SUBMITTED_FOR_LEVEL_1_REVIEW
+RETURNED_TO_EMPLOYEE
+RESUBMITTED
+LEVEL_1_APPROVED
+LEVEL_1_APPROVED_WITH_REMARKS
+FORWARDED_FOR_LEVEL_2_APPROVAL
 APPROVED
 CLOSED
 CANCELLED
 ```
+
+Shift workflow rules:
+
+- A reconciled shift must be submitted before Level-1 review.
+- A returned shift may be corrected and resubmitted by the employee.
+- Persistent shortage or excess may proceed from Level-1 only with appropriate remarks.
+- Final approval requires Level-2 approval.
+- Only an approved shift may normally transition to Closed.
+- Closed and cancelled shifts are read-only during normal operation.
+- Every workflow transition must be auditable.
 
 ---
 
@@ -597,9 +625,14 @@ Responsibilities:
 - Calculate accounted amount
 - Apply adjustments
 - Calculate difference
-- Determine reconciliation status
-- Support configurable tolerance
+- Determine calculated reconciliation status
+- Apply configurable reconciliation tolerance
 - Support employee-wise and shift-wise reconciliation
+- Maintain reconciliation submission history
+- Maintain two-level approval workflow state
+- Preserve Reviewer and Approver decisions
+- Support return, correction and resubmission
+- Preserve final approval information
 
 Core formula:
 
@@ -619,14 +652,38 @@ Difference =
   - Expected Fuel Sales Amount
 ```
 
-Statuses:
+Calculated reconciliation statuses:
 
 ```text
+PENDING
 MATCHED
 SHORTAGE
 EXCESS
 PENDING_REVIEW
+```
+
+Approval workflow statuses:
+
+```text
+NOT_SUBMITTED
+PENDING_LEVEL_1_REVIEW
+RETURNED_TO_EMPLOYEE
+RESUBMITTED
+LEVEL_1_APPROVED
+LEVEL_1_APPROVED_WITH_REMARKS
+PENDING_LEVEL_2_APPROVAL
 APPROVED
+REJECTED
+```
+
+Principal concepts:
+
+```text
+Reconciliation
+EmployeeReconciliation
+ReconciliationSubmission
+ApprovalDecision
+ApprovalWorkflowStatus
 ```
 
 ---
@@ -788,11 +845,37 @@ Nozzle Assignment
 Fuel Price Management
 Open Shift Monitoring
 Reconciliation Exceptions
-Approval Queue
+Level-1 Review Monitoring
+Level-2 Approval Monitoring
 Historical Reports
 Audit History
 Employee Profile Management
 Employee Shift Hours Report
+```
+
+### Reviewer screens
+
+```text
+Reviewer Dashboard
+Level-1 Review Queue
+Reconciliation Review Details
+Return Reconciliation for Correction
+Approve Matched Reconciliation
+Approve Shortage or Excess with Remarks
+Review Submission History
+Review Approval History
+```
+
+### Approver screens
+
+```text
+Approver Dashboard
+Level-2 Approval Queue
+Reconciliation Approval Details
+Approve Reconciliation
+Reject or Return Reconciliation with Remarks
+Review Submission History
+Review Approval History
 ```
 
 ### Incoming fuel stock screens
@@ -836,7 +919,8 @@ The database must retain:
 - Consolidated Coins entries
 - Adjustments
 - Reconciliation results
-- Approval history
+- Reconciliation submission history
+- Approval decision history
 - Audit events
 - Incoming fuel invoice headers
 - Incoming fuel invoice product items
@@ -996,6 +1080,8 @@ Suggested roles:
 
 ```text
 EMPLOYEE
+REVIEWER
+APPROVER
 SUPERVISOR
 MANAGER
 ADMINISTRATOR
@@ -1014,6 +1100,21 @@ Security responsibilities include:
 - Protection of employee personal information
 - Controlled access to employee photographs
 - Prevention of sensitive employee information in application logs
+
+Approval-security rules:
+
+- Employees must not approve their own reconciliations.
+- Level-1 review actions require Reviewer authorization.
+- Level-2 approval actions require Approver authorization.
+- Administrative roles shall not automatically bypass approval segregation.
+- Users may only access reconciliation records within their permitted organization and station scope.
+- Return and rejection actions require the appropriate business reason.
+- Approval with remarks requires remarks where required by the workflow.
+- Authorization must be enforced by the backend and must not rely only on frontend controls.
+
+Spring Security shall enforce authentication and coarse-grained authorization.
+
+Business-level approval rules, including current workflow state, approval level, segregation of duties and permitted transitions, shall be enforced by the application/domain workflow logic rather than by role checks alone.
 
 Sensitive employee information shall only be exposed to users with an authorized business requirement.
 
@@ -1035,7 +1136,13 @@ The system should record important events, including:
 - Payment entry
 - Adjustment entry
 - Reconciliation calculation
-- Approval
+- Reconciliation submission
+- Reconciliation return to employee
+- Reconciliation resubmission
+- Level-1 approval
+- Level-1 approval with remarks
+- Level-2 approval
+- Level-2 rejection or return
 - Shift closure
 - Report generation
 - Employee profile creation and update
@@ -1064,6 +1171,20 @@ Old value where applicable
 New value where applicable
 Date and time
 IP address where available
+```
+
+Approval audit records must preserve:
+
+```text
+Reconciliation
+Submission number
+Approval level
+Action
+Acting user
+Previous workflow status
+New workflow status
+Remarks or reason where applicable
+Date and time
 ```
 
 ---
@@ -1181,6 +1302,10 @@ com.bpcl.reconciliation
 └── web
 ```
 
+The `reconciliation` business area shall contain the two-level approval workflow components, including reconciliation submission, approval decisions and workflow-transition rules.
+
+Application orchestration may expose an `ApprovalApplicationService`, while workflow-validity rules should remain in domain services or domain objects rather than REST controllers.
+
 The existing package structure will be migrated carefully in a later commit.
 
 ---
@@ -1204,6 +1329,13 @@ The system will include:
 - Invoice product-line validation
 - Invoice OCR field normalization
 - Invoice OCR confidence handling
+- Reconciliation status calculation independent of approval state
+- Level-1 workflow transition rules
+- Level-2 workflow transition rules
+- Return and resubmission rules
+- Mandatory remarks for persistent shortage or excess
+- Approval segregation rules
+- Prevention of invalid workflow transitions
 
 ### Integration tests
 
@@ -1220,6 +1352,12 @@ The system will include:
 - Incoming fuel invoice document storage
 - Invoice OCR workflow
 - Invoice review and confirmation workflow
+- Reconciliation submission persistence
+- Approval-decision history persistence
+- Reviewer authorization
+- Approver authorization
+- Workflow-state updates
+- Approval audit-event persistence
 
 ### Frontend tests
 
@@ -1234,15 +1372,42 @@ The system will include:
 - Invoice OCR review
 - Multiple product-line editing
 - Invoice confirmation validation
+- Reviewer queue behavior
+- Approver queue behavior
+- Return-to-employee validation
+- Mandatory approval remarks validation
+- Role-specific approval controls
 
-### End-to-end tests
+### End-to-end approval tests
 
-- Login
-- Open shift
-- Upload receipts
-- Enter cash, Coins and non-cash collections
-- Reconcile
-- Submit and approve
+Matched reconciliation:
+
+```text
+Login as Employee
+Open Shift
+Complete Shift
+Enter Collections
+Calculate Reconciliation
+Submit Reconciliation
+Login as Reviewer
+Approve Level-1
+Login as Approver
+Approve Level-2
+Close Shift
+```
+
+Shortage or excess correction flow:
+
+```text
+Employee submits reconciliation
+Reviewer returns reconciliation
+Employee corrects permitted information
+Employee resubmits reconciliation
+Reviewer reviews again
+Reviewer approves with remarks where required
+Approver reviews reconciliation
+Approver approves or returns/rejects with remarks
+```
 
 Incoming fuel stock workflow:
 
@@ -1346,6 +1511,26 @@ Reason:
 - Shared OCR infrastructure can still be reused internally
 - Future OCR-provider replacement remains isolated from domain logic
 
+### Decision 10: Separate reconciliation result from approval workflow state
+
+Reason:
+
+- MATCHED, SHORTAGE and EXCESS are calculated financial outcomes
+- Approval is a business workflow performed after calculation
+- Approval actions must not overwrite calculated reconciliation results
+- Separate states improve auditability and reporting
+- Submission and approval history can be preserved independently
+- Two-level approval transitions can evolve without changing reconciliation formulas
+
+### Decision 11: Preserve approval decisions as append-only workflow history
+
+Reason:
+
+- Client requirements require traceability of Reviewer and Approver actions
+- Return and resubmission cycles must remain historically visible
+- Previous decisions must not be silently overwritten
+- Audit and dispute investigation require actor, timestamp, reason and workflow transition history
+
 ---
 
 ## 21. Future Enhancements
@@ -1358,7 +1543,7 @@ The architecture should support future capabilities such as:
 - Offline receipt capture
 - Cloud object storage
 - Email and SMS notifications
-- Automated approval rules
+- Advanced automated approval recommendations and configurable approval levels beyond the initial two-level workflow
 - ERP integration
 - Payment-gateway reconciliation
 - Dashboard analytics
