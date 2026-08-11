@@ -138,21 +138,26 @@ Desktop / Tablet / Mobile Browser
     v                        v                v
 Application Services     OCR Services    Reporting Services
     |                        |                |
-    +------------+-----------+----------------+
-                 |
-                 v
-          Domain Layer
-                 |
-                 v
-        Repository Interfaces
-                 |
-                 v
-      Infrastructure Adapters
-                 |
-        +--------+--------+
-        |                 |
-        v                 v
- PostgreSQL Database   File Storage
+    |              +---------+---------+      |
+    |              |                   |      |
+    |              v                   v      |
+    |        Receipt OCR        Invoice OCR   |
+    |                                             |
+    +---------------------+-----------------------+
+                          |
+                          v
+                    Domain Layer
+                          |
+                          v
+                 Repository Interfaces
+                          |
+                          v
+                Infrastructure Adapters
+                          |
+                 +--------+--------+
+                 |                 |
+                 v                 v
+          PostgreSQL Database   File Storage
 ```
 
 ---
@@ -233,6 +238,13 @@ Example use cases:
 - Record employee working period
 - Correct employee shift hours
 - Enter consolidated Coins amount
+- Upload incoming fuel invoice
+- Process incoming fuel invoice OCR
+- Review extracted invoice information
+- Correct extracted invoice information
+- Confirm incoming fuel invoice
+- Search incoming fuel invoices
+- View incoming fuel stock history
 
 Example packages:
 
@@ -279,6 +291,12 @@ CashDenominationEntry
 CoinsEntry
 Adjustment
 Reconciliation
+IncomingFuelInvoice
+IncomingFuelInvoiceItem
+IncomingFuelInvoiceDocument
+IncomingFuelInvoiceOcrResult
+IncomingFuelInvoiceOcrField
+IncomingFuelInvoiceReview
 ```
 
 All monetary and fuel-volume calculations must use `BigDecimal`.
@@ -300,6 +318,9 @@ Responsibilities:
 - Excel generation
 - PDF generation
 - Email or external integrations in future
+- Incoming fuel invoice document storage
+- Incoming fuel invoice OCR integration
+- Invoice OCR field extraction and normalization
 
 Example packages:
 
@@ -610,7 +631,54 @@ APPROVED
 
 ---
 
-### 8.9 Reporting and audit
+### 8.9 Incoming fuel stock management
+
+Incoming fuel stock management is a separate business area from employee shift reconciliation.
+
+Responsibilities:
+
+- Capture incoming Petrol and Diesel stock
+- Upload or photograph incoming fuel invoices
+- Store source invoice documents securely
+- Process invoice documents through OCR
+- Extract invoice header information
+- Extract multiple fuel-product lines
+- Capture Invoice Number
+- Capture Invoice Date and Time
+- Capture Product Description
+- Capture Product Code where available
+- Capture Quantity
+- Capture Product Value
+- Track OCR confidence
+- Present extracted information for user review
+- Allow authorized correction before confirmation
+- Confirm reviewed invoice information
+- Search historical incoming fuel invoices
+- Support incoming fuel stock reporting
+- Preserve invoice, OCR and review history
+
+Principal entities and concepts:
+
+```text
+IncomingFuelInvoice
+IncomingFuelInvoiceItem
+IncomingFuelInvoiceDocument
+IncomingFuelInvoiceOcrResult
+IncomingFuelInvoiceOcrField
+IncomingFuelInvoiceReview
+```
+
+One incoming fuel invoice may contain multiple fuel-product items.
+
+OCR-extracted information is not authoritative business data until it has been reviewed and confirmed by an authorized user.
+
+The original invoice document shall remain available for traceability according to the applicable retention policy.
+
+Incoming fuel stock records shall remain independent from operational employee shift reconciliation.
+
+---
+
+### 8.10 Reporting and audit
 
 Responsibilities:
 
@@ -650,6 +718,7 @@ frontend
 │   │   ├── employees
 │   │   ├── shifts
 │   │   ├── receipts
+│   │   ├── incomingFuelStock
 │   │   ├── payments
 │   │   ├── reconciliation
 │   │   └── reports
@@ -677,6 +746,12 @@ Important mobile requirements:
 - Employee profile and photograph capture where authorized
 - Employee working-time entry and review
 - Consolidated Coins Amount entry
+- Camera-based incoming fuel invoice capture
+- Incoming fuel invoice preview
+- Replace poor-quality invoice image
+- OCR-extracted invoice review
+- Touch-friendly invoice field correction
+- Multiple product-line review
 
 ---
 
@@ -720,6 +795,20 @@ Employee Profile Management
 Employee Shift Hours Report
 ```
 
+### Incoming fuel stock screens
+
+```text
+Incoming Fuel Stock Dashboard
+Capture Incoming Fuel Invoice
+Preview Incoming Fuel Invoice
+Review Invoice OCR Results
+Correct Invoice Information
+Confirm Incoming Fuel Invoice
+Incoming Fuel Stock History
+Incoming Fuel Stock Report
+View Source Invoice
+```
+
 ---
 
 ## 11. Database Architecture
@@ -749,6 +838,12 @@ The database must retain:
 - Reconciliation results
 - Approval history
 - Audit events
+- Incoming fuel invoice headers
+- Incoming fuel invoice product items
+- Incoming fuel invoice document metadata
+- Incoming fuel invoice OCR attempts
+- Incoming fuel invoice OCR field results
+- Incoming fuel invoice review history
 
 Receipt image files should initially be stored outside the database.
 
@@ -762,6 +857,23 @@ File size
 SHA-256 hash
 Upload timestamp
 ```
+
+Incoming fuel invoice files should also initially be stored outside the database.
+
+The database shall retain invoice-document metadata and maintain relationships between:
+
+```text
+Incoming Fuel Invoice
+        |
+        +-- Product Items
+        |
+        +-- Source Documents
+        |
+        +-- OCR Attempts
+        |       |
+        |       +-- OCR Field Results
+        |
+        +-- Review History
 
 ---
 
@@ -813,6 +925,66 @@ The implementation may use:
 - Field normalization
 
 The domain layer must not directly import OpenCV or Tess4J classes.
+
+```java
+public interface IncomingFuelInvoiceOcrService {
+
+    IncomingFuelInvoiceOcrResult process(
+            IncomingFuelInvoiceDocument invoiceDocument);
+}
+```
+
+OCR infrastructure may use:
+
+- OpenCV for image preprocessing
+- Tess4J for OCR
+- Tesseract
+- Document-specific parsers
+- Confidence scoring
+- Field normalization
+
+Receipt OCR and incoming fuel invoice OCR shall use separate application contracts because they extract different business structures.
+
+```text
+Receipt OCR
+    → DU serial number
+    → nozzle readings
+    → VTOT / ATOT
+
+Incoming Fuel Invoice OCR
+    → invoice number
+    → invoice date and time
+    → product description
+    → product code
+    → quantity
+    → product value
+```
+The domain layer must not directly import OpenCV, Tess4J or Tesseract-specific classes.
+
+
+### Why two interfaces?
+
+This is important.
+
+We should **not** create one generic interface such as:
+
+```java
+OcrService.process(file)
+```
+
+because the resulting business models are fundamentally different.
+
+We want:
+
+ReceiptOcrService
+        ↓
+Receipt-specific result
+
+IncomingFuelInvoiceOcrService
+        ↓
+Invoice-specific result
+
+while still allowing infrastructure reuse underneath.
 
 ---
 
@@ -872,6 +1044,14 @@ The system should record important events, including:
 - Employee shift-hours correction
 - Cash denomination entry
 - Coins Amount entry or correction
+- Incoming fuel invoice upload
+- Incoming fuel invoice document replacement
+- Invoice OCR processing
+- Invoice OCR failure
+- Invoice field correction
+- Incoming fuel invoice review
+- Incoming fuel invoice confirmation
+- Incoming fuel invoice cancellation
 
 Audit records should include:
 
@@ -905,8 +1085,16 @@ Spring Boot Backend
    |
    +---- PostgreSQL
    |
-   +---- Receipt File Storage
+   +---- Document File Storage
+          |
+          +---- Receipt Images
+          |
+          +---- Incoming Fuel Invoices
 ```
+
+Receipt images and incoming fuel invoice documents may initially share the same secured storage infrastructure while remaining logically separated by document type and storage path.
+
+The storage abstraction should permit future migration to cloud object storage without changing domain logic.
 
 Possible deployment environments:
 
@@ -980,6 +1168,10 @@ com.bpcl.reconciliation
 │   ├── application
 │   └── infrastructure
 ├── receipt
+├── incomingfuel
+│   ├── domain
+│   ├── application
+│   └── infrastructure
 ├── sales
 ├── payment
 ├── adjustment
@@ -1008,6 +1200,10 @@ The system will include:
 - Employee shift-hours correction rules
 - Cash denomination calculations
 - Consolidated Coins calculations
+- Incoming fuel invoice validation
+- Invoice product-line validation
+- Invoice OCR field normalization
+- Invoice OCR confidence handling
 
 ### Integration tests
 
@@ -1020,6 +1216,10 @@ The system will include:
 - Employee profile persistence
 - Employee shift-hours persistence and correction history
 - Coins entry persistence
+- Incoming fuel invoice persistence
+- Incoming fuel invoice document storage
+- Invoice OCR workflow
+- Invoice review and confirmation workflow
 
 ### Frontend tests
 
@@ -1030,6 +1230,10 @@ The system will include:
 - Employee profile validation
 - Employee working-time validation
 - Coins Amount validation
+- Incoming fuel invoice capture validation
+- Invoice OCR review
+- Multiple product-line editing
+- Invoice confirmation validation
 
 ### End-to-end tests
 
@@ -1039,6 +1243,21 @@ The system will include:
 - Enter cash, Coins and non-cash collections
 - Reconcile
 - Submit and approve
+
+Incoming fuel stock workflow:
+
+```text
+Login
+Capture incoming fuel invoice
+Preview invoice
+Submit invoice
+Process invoice OCR
+Review extracted information
+Correct information where required
+Confirm incoming fuel invoice
+Search confirmed invoice
+View incoming fuel stock report
+```
 
 ---
 
@@ -1115,6 +1334,17 @@ Reason:
 - Avoid floating-point errors
 - Preserve financial precision
 - Support configurable rounding
+
+### Decision 9: Separate OCR contracts for receipts and incoming fuel invoices
+
+Reason:
+
+- Receipt OCR and invoice OCR extract different business structures
+- Receipt OCR is reading-oriented
+- Invoice OCR includes header and multiple product-line extraction
+- Separate contracts prevent business-specific parsing logic from becoming coupled
+- Shared OCR infrastructure can still be reused internally
+- Future OCR-provider replacement remains isolated from domain logic
 
 ---
 
