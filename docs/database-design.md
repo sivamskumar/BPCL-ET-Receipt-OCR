@@ -1632,9 +1632,303 @@ This table is append-only.
 
 ---
 
-# 16. Audit Table
+# 16. Incoming Fuel Stock Tables
 
-## 16.1 `audit_event`
+Incoming fuel stock is maintained independently from operational shift reconciliation.
+
+One incoming fuel invoice represents one supplier invoice received by a fuel station and may contain one or more fuel-product items.
+
+The original invoice document, OCR processing information and user review history shall remain associated with the invoice for traceability.
+
+## 16.1 `incoming_fuel_invoice`
+
+Stores invoice-level information for one incoming fuel delivery received by a fuel station.
+
+Columns:
+
+| Column | Type | Required | Description |
+|---|---|---:|---|
+| id | BIGINT | Yes | Primary key |
+| fuel_station_id | BIGINT | Yes | Receiving fuel station |
+| invoice_number | VARCHAR(100) | Yes | Supplier invoice number |
+| invoice_date | DATE | Yes | Invoice date |
+| invoice_time | TIME | No | Invoice time where available |
+| received_date | DATE | No | Date fuel was received |
+| total_invoice_amount | NUMERIC(19,2) | No | Total invoice amount |
+| status | VARCHAR(30) | Yes | Invoice processing status |
+| confirmed_by | BIGINT | No | User confirming reviewed invoice |
+| confirmed_at | TIMESTAMPTZ | No | Confirmation timestamp |
+| created_at | TIMESTAMPTZ | Yes | Creation timestamp |
+| created_by | BIGINT | Yes | Creating user |
+| updated_at | TIMESTAMPTZ | No | Last update timestamp |
+| updated_by | BIGINT | No | Updating user |
+| version | BIGINT | Yes | Optimistic-lock version |
+
+Initial statuses:
+
+```text
+DRAFT
+UPLOADED
+OCR_PROCESSING
+OCR_COMPLETED
+REVIEW_REQUIRED
+CONFIRMED
+FAILED
+CANCELLED
+```
+
+Checks:
+
+```text
+total_invoice_amount IS NULL
+OR total_invoice_amount >= 0
+```
+
+Business rules:
+
+- Every incoming fuel invoice belongs to one fuel station.
+- Invoice Number and Invoice Date are mandatory before confirmation.
+- A confirmed invoice must contain at least one valid product item.
+- OCR completion shall not automatically confirm an invoice.
+- Confirmed invoice information is authoritative business data.
+- Corrections after confirmation require authorization and audit history.
+- Incoming fuel invoices remain independent from operational shift reconciliation.
+
+---
+
+## 16.2 `incoming_fuel_invoice_item`
+
+Stores one product line belonging to an incoming fuel invoice.
+
+Columns:
+
+| Column | Type | Required | Description |
+|---|---|---:|---|
+| id | BIGINT | Yes | Primary key |
+| incoming_fuel_invoice_id | BIGINT | Yes | Parent invoice |
+| line_number | INTEGER | Yes | Product-line sequence within invoice |
+| product_description | VARCHAR(200) | Yes | Supplier product description |
+| product_code | VARCHAR(50) | No | Supplier product code |
+| fuel_type_id | BIGINT | No | Normalized application fuel type |
+| quantity | NUMERIC(19,3) | Yes | Received quantity |
+| unit_of_measurement | VARCHAR(20) | No | Quantity unit from invoice |
+| product_value | NUMERIC(19,2) | Yes | Product-line value |
+| created_at | TIMESTAMPTZ | Yes | Creation timestamp |
+| created_by | BIGINT | Yes | Creating user |
+| updated_at | TIMESTAMPTZ | No | Last update timestamp |
+| updated_by | BIGINT | No | Updating user |
+
+Unique constraint:
+
+```text
+incoming_fuel_invoice_id + line_number
+```
+
+Checks:
+
+```text
+line_number > 0
+quantity > 0
+product_value >= 0
+```
+
+Business rules:
+
+- Every product item belongs to exactly one incoming fuel invoice.
+- One invoice may contain multiple product items.
+- Product Description, Quantity and Product Value are mandatory before confirmation.
+- Product Code shall be retained where available on the invoice.
+- Supplier product description shall remain available even when mapped to a configured `fuel_type`.
+- OCR-extracted values remain editable until confirmation.
+- Changes after confirmation require authorization and audit history.
+
+---
+
+## 16.3 `incoming_fuel_invoice_document`
+
+Stores metadata for an uploaded or photographed incoming fuel invoice document.
+
+Columns:
+
+| Column | Type | Required | Description |
+|---|---|---:|---|
+| id | BIGINT | Yes | Primary key |
+| incoming_fuel_invoice_id | BIGINT | Yes | Parent invoice |
+| original_filename | VARCHAR(255) | Yes | Original uploaded filename |
+| storage_path | VARCHAR(1000) | Yes | Secure storage location |
+| content_type | VARCHAR(100) | Yes | MIME type |
+| file_size | BIGINT | Yes | File size in bytes |
+| sha256_hash | CHAR(64) | No | Integrity and duplicate-detection hash |
+| uploaded_by | BIGINT | Yes | Uploading user |
+| uploaded_at | TIMESTAMPTZ | Yes | Upload timestamp |
+| active | BOOLEAN | Yes | Current source-document indicator |
+
+Check:
+
+```text
+file_size > 0
+```
+
+Business rules:
+
+- Invoice documents shall be stored outside PostgreSQL initially.
+- Source invoice documents shall not be publicly accessible.
+- The original uploaded document shall not be modified during data correction.
+- Replacing an invoice document shall preserve appropriate history.
+- The application shall not use an untrusted original filename as the physical storage path.
+
+---
+
+## 16.4 `incoming_fuel_invoice_ocr_result`
+
+Stores one OCR processing attempt for an incoming fuel invoice document.
+
+Columns:
+
+| Column | Type | Required | Description |
+|---|---|---:|---|
+| id | BIGINT | Yes | Primary key |
+| incoming_fuel_invoice_id | BIGINT | Yes | Parent invoice |
+| invoice_document_id | BIGINT | Yes | Source document |
+| attempt_number | INTEGER | Yes | OCR attempt sequence |
+| raw_text | TEXT | No | Original OCR-recognized text |
+| average_confidence | NUMERIC(5,2) | No | Overall OCR confidence |
+| successful | BOOLEAN | Yes | Processing result |
+| error_message | TEXT | No | Failure information |
+| started_at | TIMESTAMPTZ | Yes | Processing start |
+| completed_at | TIMESTAMPTZ | No | Processing completion |
+| processing_duration_ms | BIGINT | No | Processing duration |
+
+Unique constraint:
+
+```text
+incoming_fuel_invoice_id + attempt_number
+```
+
+Checks:
+
+```text
+attempt_number > 0
+
+average_confidence IS NULL
+OR (
+    average_confidence >= 0
+    AND average_confidence <= 100
+)
+
+processing_duration_ms IS NULL
+OR processing_duration_ms >= 0
+```
+
+Business rules:
+
+- Multiple OCR attempts may exist for one invoice.
+- Previous OCR attempts shall not be overwritten.
+- Raw OCR text shall remain available for traceability.
+- OCR failure shall not delete the source invoice document.
+- OCR results shall not directly overwrite confirmed invoice data.
+
+---
+
+## 16.5 `incoming_fuel_invoice_ocr_field`
+
+Stores field-level OCR results for an incoming fuel invoice OCR attempt.
+
+Columns:
+
+| Column | Type | Required | Description |
+|---|---|---:|---|
+| id | BIGINT | Yes | Primary key |
+| ocr_result_id | BIGINT | Yes | Parent OCR result |
+| item_line_number | INTEGER | No | Product-line association where applicable |
+| field_name | VARCHAR(100) | Yes | Logical extracted field |
+| recognized_text | VARCHAR(500) | No | Original OCR-recognized text |
+| normalized_text | VARCHAR(500) | No | Parsed or normalized value |
+| confidence | NUMERIC(5,2) | No | Field confidence |
+| warning_message | VARCHAR(1000) | No | OCR or validation warning |
+
+Checks:
+
+```text
+confidence IS NULL
+OR (
+    confidence >= 0
+    AND confidence <= 100
+)
+
+item_line_number IS NULL
+OR item_line_number > 0
+```
+
+Example field names:
+
+```text
+INVOICE_NUMBER
+INVOICE_DATE
+INVOICE_TIME
+PRODUCT_DESCRIPTION
+PRODUCT_CODE
+QUANTITY
+PRODUCT_VALUE
+TOTAL_INVOICE_AMOUNT
+```
+
+Business rules:
+
+- Original OCR-recognized text shall be retained.
+- Normalized values may differ from recognized text.
+- Low-confidence or invalid values shall be presented for user review.
+- Product-level fields may be associated with an extracted item line.
+- OCR field results are extraction evidence and are not authoritative business data.
+
+---
+
+## 16.6 `incoming_fuel_invoice_review`
+
+Stores user review and confirmation history for OCR-assisted incoming fuel invoices.
+
+Columns:
+
+| Column | Type | Required | Description |
+|---|---|---:|---|
+| id | BIGINT | Yes | Primary key |
+| incoming_fuel_invoice_id | BIGINT | Yes | Reviewed invoice |
+| review_sequence | INTEGER | Yes | Review sequence |
+| review_status | VARCHAR(30) | Yes | Review outcome |
+| reviewed_by | BIGINT | Yes | Reviewing user |
+| reviewed_at | TIMESTAMPTZ | Yes | Review timestamp |
+| remarks | VARCHAR(1000) | No | Review remarks |
+| corrections_applied | BOOLEAN | Yes | Whether extracted values were corrected |
+
+Unique constraint:
+
+```text
+incoming_fuel_invoice_id + review_sequence
+```
+
+Review statuses:
+
+```text
+PENDING
+IN_REVIEW
+CORRECTED
+CONFIRMED
+REJECTED
+```
+
+Business rules:
+
+- OCR-extracted information must be reviewed before confirmation.
+- Review history shall not be overwritten.
+- Corrections made during review shall remain auditable.
+- Confirmation shall identify the reviewing user and timestamp.
+- Review shall never modify the original source invoice document.
+
+---
+
+# 17. Audit Table
+
+## 17.1 `audit_event`
 
 Stores important user and system actions.
 
@@ -1668,6 +1962,15 @@ PAYMENT_ENTERED
 CASH_DENOMINATION_ENTERED
 COINS_AMOUNT_ENTERED
 CASH_ENTRY_UPDATED
+INCOMING_FUEL_INVOICE_UPLOADED
+INCOMING_FUEL_INVOICE_DOCUMENT_REPLACED
+INCOMING_FUEL_INVOICE_OCR_STARTED
+INCOMING_FUEL_INVOICE_OCR_COMPLETED
+INCOMING_FUEL_INVOICE_OCR_FAILED
+INCOMING_FUEL_INVOICE_REVIEWED
+INCOMING_FUEL_INVOICE_CORRECTED
+INCOMING_FUEL_INVOICE_CONFIRMED
+INCOMING_FUEL_INVOICE_CANCELLED
 ADJUSTMENT_CREATED
 RECONCILIATION_CALCULATED
 RECONCILIATION_SUBMITTED
@@ -1679,9 +1982,9 @@ This table should normally be append-only.
 
 ---
 
-# 17. Report Table
+# 18. Report Table
 
-## 17.1 `generated_report`
+## 18.1 `generated_report`
 
 Stores generated report metadata.
 
@@ -1720,7 +2023,7 @@ AUDIT_REPORT
 
 ---
 
-# 18. Foreign-Key Relationships
+# 19. Foreign-Key Relationships
 
 Principal relationships:
 
@@ -1733,7 +2036,8 @@ organization
 fuel_station
     ├── dispenser_unit
     ├── fuel_price
-    └── shift
+    ├── shift
+    └── incoming_fuel_invoice
 
 dispenser_unit
     ├── nozzle
@@ -1783,11 +2087,32 @@ reconciliation
     ├── employee_reconciliation
     ├── reconciliation_approval
     └── generated_report
+
+incoming_fuel_invoice
+    ├── incoming_fuel_invoice_item
+    ├── incoming_fuel_invoice_document
+    ├── incoming_fuel_invoice_ocr_result
+    └── incoming_fuel_invoice_review
+
+incoming_fuel_invoice_document
+    └── incoming_fuel_invoice_ocr_result
+
+incoming_fuel_invoice_ocr_result
+    └── incoming_fuel_invoice_ocr_field
+
+fuel_type
+    └── incoming_fuel_invoice_item
+
+application_user
+    ├── incoming_fuel_invoice.created_by
+    ├── incoming_fuel_invoice.confirmed_by
+    ├── incoming_fuel_invoice_document.uploaded_by
+    └── incoming_fuel_invoice_review.reviewed_by
 ```
 
 ---
 
-# 19. Delete and Update Behaviour
+# 20. Delete and Update Behaviour
 
 Master records with transaction history should generally not be physically deleted.
 
@@ -1809,7 +2134,15 @@ fuel_price
 application_user
 role
 cash_denomination
+incoming_fuel_invoice
+incoming_fuel_invoice_item
+incoming_fuel_invoice_document
+incoming_fuel_invoice_ocr_result
+incoming_fuel_invoice_ocr_field
+incoming_fuel_invoice_review
 ```
+
+Confirmed incoming fuel invoices and their associated source documents, OCR results and review history shall not be physically deleted through normal application operations.
 
 Recommended foreign-key behaviour:
 
@@ -1834,6 +2167,8 @@ Examples may include:
 ```text
 receipt → ocr_field_result through OCR attempt
 reconciliation → employee_reconciliation
+incoming_fuel_invoice → incoming_fuel_invoice_item
+incoming_fuel_invoice_ocr_result → incoming_fuel_invoice_ocr_field
 ```
 
 However, even cascades should be used cautiously because transaction and audit data should rarely be physically deleted.
@@ -1842,7 +2177,7 @@ Normal application operations should not delete completed shifts, receipts, reco
 
 ---
 
-# 20. Recommended Indexes
+# 21. Recommended Indexes
 
 ## Master-data indexes
 
@@ -1890,6 +2225,32 @@ idx_receipt_processing_status
 idx_receipt_uploaded_at
 ```
 
+## Incoming fuel invoice indexes
+
+```text
+idx_incoming_fuel_invoice_station
+idx_incoming_fuel_invoice_number
+idx_incoming_fuel_invoice_date
+idx_incoming_fuel_invoice_status
+idx_incoming_fuel_invoice_received_date
+
+idx_incoming_fuel_invoice_item_invoice
+idx_incoming_fuel_invoice_item_fuel_type
+idx_incoming_fuel_invoice_item_product_code
+
+idx_incoming_fuel_invoice_document_invoice
+idx_incoming_fuel_invoice_document_hash
+
+idx_incoming_fuel_invoice_ocr_result_invoice
+idx_incoming_fuel_invoice_ocr_result_document
+
+idx_incoming_fuel_invoice_ocr_field_result
+idx_incoming_fuel_invoice_ocr_field_confidence
+
+idx_incoming_fuel_invoice_review_invoice
+idx_incoming_fuel_invoice_review_reviewed_at
+```
+
 ## Sales and payment indexes
 
 ```text
@@ -1926,7 +2287,7 @@ Indexes must be reviewed using actual query plans after representative data beco
 
 ---
 
-# 21. Unique Business Constraints
+# 22. Unique Business Constraints
 
 The database should enforce these rules wherever possible:
 
@@ -1951,12 +2312,20 @@ The database should enforce these rules wherever possible:
 19. One cash-denomination entry exists at most once for each shift, employee and denomination.
 20. One consolidated Coins entry exists at most once for each employee within a shift.
 21. Coins Amount must be zero or greater.
+22. Each incoming fuel invoice item line number must be unique within its invoice.
+23. Every incoming fuel invoice item belongs to exactly one incoming fuel invoice.
+24. OCR attempt numbers must be unique within an incoming fuel invoice.
+25. Invoice review sequence numbers must be unique within an incoming fuel invoice.
+26. A confirmed incoming fuel invoice must contain at least one valid product item.
+27. Confirmed incoming fuel product quantities must be greater than zero.
+28. OCR-extracted information must not become authoritative business data without authorized review and confirmation.
+
 
 Rules involving date-range overlap may require PostgreSQL exclusion constraints or application-level transactional validation.
 
 ---
 
-# 22. Transaction Boundaries
+# 23. Transaction Boundaries
 
 The following operations should execute within database transactions:
 
@@ -2033,6 +2402,50 @@ Calculate payment summary
 Write audit event
 ```
 
+## Upload incoming fuel invoice
+
+```text
+Validate user authority
+Validate fuel station
+Validate invoice document
+Create or update invoice draft
+Store source invoice document
+Create invoice document metadata
+Update invoice status to UPLOADED
+Write audit event
+```
+
+## Process incoming fuel invoice OCR
+
+```text
+Load invoice and source document
+Validate OCR processing eligibility
+Create OCR processing attempt
+Update invoice status to OCR_PROCESSING
+Process source document
+Store raw OCR output
+Store field-level OCR results
+Store extracted invoice and product information for review
+Update OCR attempt result
+Update invoice status to REVIEW_REQUIRED or FAILED
+Write audit event
+```
+
+## Confirm incoming fuel invoice
+
+```text
+Load invoice
+Validate authorized reviewer
+Validate Invoice Number and Invoice Date
+Validate at least one product item
+Validate product quantities
+Apply reviewed and corrected values
+Create incoming fuel invoice review record
+Update invoice status to CONFIRMED
+Record confirmed_by and confirmed_at
+Write audit event
+```
+
 ## Calculate reconciliation
 
 ```text
@@ -2055,7 +2468,7 @@ Update shift status
 Write audit event
 ```
 
-# 23. Concurrency and Optimistic Locking
+# 24. Concurrency and Optimistic Locking
 
 Important mutable tables should contain:
 
@@ -2075,6 +2488,7 @@ fuel_price
 shift
 employee_shift_hours
 receipt
+incoming_fuel_invoice
 payment_entry
 cash_denomination_entry
 coins_entry
@@ -2102,7 +2516,7 @@ If no row is updated, another user changed the record and the operation must be 
 
 
 
-# 24. Receipt File Storage
+# 25. Receipt File Storage
 
 Receipt images will initially be stored outside PostgreSQL.
 
@@ -2142,7 +2556,38 @@ The application must prevent path traversal and must not use an untrusted origin
 
 ---
 
-# 25. Data Retention
+## Incoming Fuel Invoice File Storage
+
+Incoming fuel invoice documents will also initially be stored outside PostgreSQL.
+
+Suggested directory structure:
+
+```text
+invoice-storage/
+└── organization-code/
+    └── station-code/
+        └── invoice-date/
+            └── incoming-fuel-invoice-id/
+                └── source/
+```
+
+The database stores invoice-document metadata in:
+
+```text
+incoming_fuel_invoice_document
+```
+
+Recommended generated filename:
+
+```text
+invoice-<uuid>.<extension>
+```
+
+The application must prevent path traversal and must not use an untrusted original filename as the physical storage path.
+
+---
+
+# 26. Data Retention
 
 Suggested initial retention policy:
 
@@ -2156,13 +2601,17 @@ Reconciliation results            Indefinite
 Audit events                      Minimum policy-defined period
 Generated reports                 Configurable
 Authentication event history      Policy-defined period
+Incoming fuel invoices             Same approved operational retention policy
+Incoming fuel invoice documents    Same retention as invoice
+Incoming fuel invoice OCR output   Same retention as invoice
+Incoming fuel invoice reviews      Same retention as invoice
 ```
 
 Deletion and archival rules should be confirmed before production deployment.
 
 ---
 
-# 26. Flyway Migration Plan
+# 27. Flyway Migration Plan
 
 The schema should be introduced in manageable migrations.
 
@@ -2177,9 +2626,10 @@ V5__create_receipt_and_ocr_tables.sql
 V6__create_fuel_sales_tables.sql
 V7__create_payment_and_adjustment_tables.sql
 V8__create_reconciliation_tables.sql
-V9__create_audit_and_report_tables.sql
-V10__insert_reference_data.sql
-V11__create_indexes.sql
+V9__create_incoming_fuel_invoice_tables.sql
+V10__create_audit_and_report_tables.sql
+V11__insert_reference_data.sql
+V12__create_indexes.sql
 ```
 
 Each migration must:
@@ -2198,7 +2648,7 @@ Create a new migration to change an existing schema.
 
 ---
 
-# 27. Reference Data
+# 28. Reference Data
 
 Initial reference data may include:
 
@@ -2238,7 +2688,7 @@ Database-generated IDs must not be assumed to have fixed values in application c
 
 ---
 
-# 28. PostgreSQL-Specific Features
+# 29. PostgreSQL-Specific Features
 
 The initial implementation may use these PostgreSQL features:
 
@@ -2258,7 +2708,7 @@ Repository implementations may use PostgreSQL-specific SQL where it materially i
 
 ---
 
-# 29. H2 Test Compatibility
+# 30. H2 Test Compatibility
 
 H2 should be used mainly for:
 
@@ -2285,7 +2735,7 @@ H2 must not be treated as proof that all PostgreSQL SQL is valid.
 
 ---
 
-# 30. Backup and Recovery
+# 31. Backup and Recovery
 
 Production deployment must define:
 
@@ -2294,18 +2744,19 @@ Automated PostgreSQL backups
 Backup retention
 Point-in-time recovery where required
 Receipt file-storage backup
+Incoming fuel invoice file-storage backup
 Encryption at rest
 Restore testing
 Disaster-recovery responsibilities
 ```
 
-Database backup without receipt file storage is incomplete because receipt images are stored externally.
+Database backup without receipt and incoming fuel invoice file storage is incomplete because both document types are stored externally.
 
 The database and receipt storage should be backed up consistently.
 
 ---
 
-# 31. Security Considerations
+# 32. Security Considerations
 
 The database user used by the application should:
 
@@ -2323,9 +2774,13 @@ Flyway may use:
 
 Sensitive values such as database passwords must not be committed to Git.
 
+Incoming fuel invoice documents and OCR-derived information shall only be accessible through authorized application operations.
+
+Direct storage paths must not provide public or unauthenticated access to invoice documents.
+
 ---
 
-# 32. Open Design Decisions
+# 33. Open Design Decisions
 
 The following decisions will be finalized later:
 
@@ -2341,10 +2796,12 @@ The following decisions will be finalized later:
 10. Whether Testcontainers will be used from the first database milestone.
 11. Whether public UUID identifiers are required for REST APIs.
 12. Whether deleted or cancelled transaction data needs dedicated archival tables.
+13. Whether supplier name, shipment document number, delivery number, vehicle details and detailed tax breakup must be permanently maintained for incoming fuel invoices.
+14. The final uniqueness rule for supplier invoice numbers across organization, station and supplier boundaries.
 
 ---
 
-# 33. Initial Implementation Scope
+# 34. Initial Implementation Scope
 
 The first database implementation should focus on:
 
@@ -2368,6 +2825,12 @@ employee_shift_hours_correction
 shift_nozzle_assignment
 receipt
 receipt_nozzle_reading
+incoming_fuel_invoice
+incoming_fuel_invoice_item
+incoming_fuel_invoice_document
+incoming_fuel_invoice_ocr_result
+incoming_fuel_invoice_ocr_field
+incoming_fuel_invoice_review
 payment_entry
 cash_denomination_entry
 coins_entry
@@ -2383,7 +2846,7 @@ More advanced tables such as detailed OCR field results and credit settlement ca
 
 ---
 
-# 34. Next Steps
+# 35. Next Steps
 
 After this database design is approved:
 
