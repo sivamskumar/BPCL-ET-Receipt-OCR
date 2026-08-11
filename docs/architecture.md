@@ -18,6 +18,13 @@ The application is designed to support:
 - Expenses and other approved adjustments
 - Desktop, tablet and mobile access
 - Centralized reporting and audit history
+- Employee profile management
+- Employee shift-hours tracking
+- Consolidated Coins entry
+- Incoming fuel stock management
+- OCR-assisted incoming fuel invoice capture
+- Two-level reconciliation approval workflow
+- Configurable operational data retention
 
 OCR is an infrastructure capability within the larger reconciliation system.
 
@@ -57,6 +64,11 @@ The architecture must provide:
 - Testable business rules
 - Support for future integrations
 - Easy deployment and maintenance
+- Secure handling of employee personal information and photographs
+- Traceable employee working-hour records
+- Separation of OCR-extracted data from confirmed business data
+- Multi-level approval workflow with immutable decision history
+- Configurable operational data-retention policies
 
 ---
 
@@ -217,6 +229,10 @@ Example use cases:
 - Calculate reconciliation
 - Approve reconciliation
 - Generate reports
+- Maintain employee profile
+- Record employee working period
+- Correct employee shift hours
+- Enter consolidated Coins amount
 
 Example packages:
 
@@ -249,6 +265,7 @@ Principal domain concepts include:
 FuelStation
 DispenserUnit
 Employee
+EmployeeShiftHours
 Nozzle
 NozzleAssignment
 Shift
@@ -258,6 +275,8 @@ FuelPrice
 FuelSale
 Payment
 CashDenomination
+CashDenominationEntry
+CoinsEntry
 Adjustment
 Reconciliation
 ```
@@ -324,19 +343,52 @@ FuelType
 
 Responsibilities:
 
-- Employee master data
+- Employee profile management
+- Employee contact and address information
+- Employee photograph management
+- Employment lifecycle management
+- Date of joining and date of leaving
+- Employee activation and deactivation
 - Nozzle-to-employee assignments
 - Effective date handling
 - Assignment history
+- Employee working-period tracking
+- Employee shift-hours correction history
 
 Principal entities:
 
 ```text
 Employee
+EmployeeShiftHours
+EmployeeShiftHoursCorrection
 NozzleAssignment
 ```
 
+Employee profiles may contain sensitive personal information and must only be accessible through authorized application operations.
+
+Employee photographs shall be stored securely and shall not be publicly accessible.
+
 Nozzle assignment must not be permanently hardcoded.
+
+Historical employee, assignment and working-hour information must remain traceable when an employee becomes inactive or leaves the organization.
+
+
+### Aadhaar
+
+Notice that I have deliberately **not written Aadhaar directly into this architecture subsection**.
+
+The architecture should establish:
+
+```text
+sensitive employee personal information
+        ↓
+controlled access
+        ↓
+secure storage
+        ↓
+no unrestricted logging/reporting
+```
+The exact field belongs in the BRD/domain/database design, where we already modeled it.
 
 ---
 
@@ -348,8 +400,11 @@ Responsibilities:
 - Shift closing
 - Business date
 - Assigned employees
+- Employee participation tracking
+- Employee working-period tracking
 - Shift status
 - Start and end receipt association
+
 
 Principal entity:
 
@@ -438,7 +493,10 @@ Calculated Sales Amount = Quantity Sold × Price Per Litre
 
 Responsibilities:
 
-- Cash denomination entry
+- Currency-note denomination entry
+- Consolidated Coins Amount entry
+- Cash-total calculation
+- UPI TID capture
 - UPI amount entry
 - Card collection entry
 - Credit sale entry
@@ -449,7 +507,9 @@ Principal entities:
 
 ```text
 Payment
+CashDenomination
 CashDenominationEntry
+CoinsEntry
 CreditSale
 PaymentReference
 ```
@@ -462,6 +522,19 @@ UPI
 CARD
 CREDIT
 ```
+
+Cash collection shall distinguish between currency-note denomination entries and a directly entered consolidated Coins Amount.
+
+```text
+Notes Total =
+    SUM(Denomination Value × Quantity)
+
+Cash Total =
+    Notes Total
+  + Coins Amount
+```
+
+Individual ₹5, ₹2 and ₹1 denomination quantities are not required.
 
 ---
 
@@ -601,6 +674,9 @@ Important mobile requirements:
 - Responsive denomination-entry grid
 - Reconciliation summary visible without horizontal scrolling
 - Support for poor or unstable network conditions in future
+- Employee profile and photograph capture where authorized
+- Employee working-time entry and review
+- Consolidated Coins Amount entry
 
 ---
 
@@ -612,10 +688,12 @@ Important mobile requirements:
 Login
 Dashboard
 Open Shift
+Record Working Period
 Upload Start Receipt
 Upload End Receipt
 Review OCR Readings
 Enter Cash Denominations
+Enter Coins Amount
 Enter UPI Collections
 Enter Card Collections
 Enter Credit Sales
@@ -638,6 +716,8 @@ Reconciliation Exceptions
 Approval Queue
 Historical Reports
 Audit History
+Employee Profile Management
+Employee Shift Hours Report
 ```
 
 ---
@@ -655,12 +735,16 @@ H2 may be used for automated tests where PostgreSQL-specific behavior is not req
 The database must retain:
 
 - Master data
+- Employee profile data
+- Employee shift-hours history
+- Employee shift-hours correction history
 - Shift transactions
 - Receipt metadata
 - OCR results
 - Parsed readings
 - Manual corrections
 - Payment entries
+- Consolidated Coins entries
 - Adjustments
 - Reconciliation results
 - Approval history
@@ -755,6 +839,13 @@ Security responsibilities include:
 - Audit logging
 - Approval permissions
 - Session or token management
+- Protection of employee personal information
+- Controlled access to employee photographs
+- Prevention of sensitive employee information in application logs
+
+Sensitive employee information shall only be exposed to users with an authorized business requirement.
+
+Employee photographs and protected personal information shall not be directly exposed through public file-system paths.
 
 Spring Security will provide the security framework.
 
@@ -775,6 +866,12 @@ The system should record important events, including:
 - Approval
 - Shift closure
 - Report generation
+- Employee profile creation and update
+- Employee activation/deactivation
+- Employee working-period completion
+- Employee shift-hours correction
+- Cash denomination entry
+- Coins Amount entry or correction
 
 Audit records should include:
 
@@ -907,6 +1004,10 @@ The system will include:
 - Value-object validation
 - Receipt parsing rules
 - Nozzle-assignment rules
+- Employee working-duration calculations
+- Employee shift-hours correction rules
+- Cash denomination calculations
+- Consolidated Coins calculations
 
 ### Integration tests
 
@@ -916,6 +1017,9 @@ The system will include:
 - OCR workflow
 - File upload
 - Authentication
+- Employee profile persistence
+- Employee shift-hours persistence and correction history
+- Coins entry persistence
 
 ### Frontend tests
 
@@ -923,13 +1027,16 @@ The system will include:
 - Payment calculations
 - Reconciliation summaries
 - Responsive behavior
+- Employee profile validation
+- Employee working-time validation
+- Coins Amount validation
 
 ### End-to-end tests
 
 - Login
 - Open shift
 - Upload receipts
-- Enter collections
+- Enter cash, Coins and non-cash collections
 - Reconcile
 - Submit and approve
 
