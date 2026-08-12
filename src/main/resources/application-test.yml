@@ -1,0 +1,22 @@
+spring:
+  config:
+    activate:
+      on-profile: test
+
+server:
+  port: 0
+
+logging:
+  level:
+    com.bpcl.reconciliation: WARN
+
+app:
+  storage:
+    receipt-root: ./target/test-storage/receipts
+    invoice-root: ./target/test-storage/invoices
+
+  ocr:
+    minimum-confidence: 75.0
+
+  retention:
+    operational-months: 14

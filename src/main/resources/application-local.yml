@@ -1,0 +1,13 @@
+spring:
+  config:
+    activate:
+      on-profile: local
+
+logging:
+  level:
+    com.bpcl.reconciliation: DEBUG
+
+app:
+  storage:
+    receipt-root: ./data/local/receipts
+    invoice-root: ./data/local/invoices

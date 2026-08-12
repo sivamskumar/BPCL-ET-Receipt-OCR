@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: fuel-station-shift-reconciliation
+
+  profiles:
+    default: local
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  name: Fuel Station Shift Reconciliation System
+  version: ${APP_VERSION:0.1.0-SNAPSHOT}
+
+  storage:
+    receipt-root: ${APP_RECEIPT_STORAGE:./data/receipts}
+    invoice-root: ${APP_INVOICE_STORAGE:./data/invoices}
+
+  ocr:
+    minimum-confidence: ${APP_OCR_MINIMUM_CONFIDENCE:75.0}
+
+  retention:
+    operational-months: ${APP_RETENTION_OPERATIONAL_MONTHS:14}
