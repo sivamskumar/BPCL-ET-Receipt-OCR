@@ -7,6 +7,9 @@ spring:
     exclude:
       - org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration
 
+  flyway:
+    enabled: false
+
 server:
   port: 0
 
