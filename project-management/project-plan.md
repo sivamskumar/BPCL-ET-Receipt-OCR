@@ -7,8 +7,8 @@
 **Development Capacity:** Approximately 4 focused hours per day
 **Delivery Approach:** Incremental milestone-based development
 **Current Phase:** Phase 1C — Backend Application Development
-**Current Milestone:** Milestone 1C.2 — Application Service Foundation
-
+**Current Backend Milestone:** Milestone 1C.3 — Administration and Master Data APIs
+**Current Parallel UI Milestone:** Milestone 1D.1 — UI/UX Prototype Foundation
 ---
 
 ## 1. Purpose
@@ -316,45 +316,73 @@ structure unless an actual requirement defect is discovered.
 
 ## Milestone 1C.2 — Application Service Foundation
 
-**Status:** NEXT
-**Target:** Aug-2026
+**Status:** COMPLETE
+**Completion Date:** 17-Aug-2026
+**Schedule Status:** On Track
 
 ### Objective
 
 Establish common application-layer conventions before implementing
 business-specific APIs.
 
-### Scope
+### Completed Deliverables
 
 - application-service package structure;
-- transaction-boundary conventions;
-- service input/output conventions;
-- DTO conventions;
-- entity-not-found handling;
-- business-validation handling;
-- optimistic-lock conflict handling;
-- current-user abstraction;
-- organization context;
-- station context;
-- reusable application exceptions;
-- common validation utilities;
-- service testing conventions.
+- common application exception hierarchy;
+- resource-not-found handling foundation;
+- business-validation exception handling foundation;
+- conflict handling foundation;
+- optimistic-lock conflict abstraction;
+- current-user execution-context abstraction;
+- current-organization context abstraction;
+- current-station context abstraction;
+- reusable application validation utilities;
+- application-service transaction conventions;
+- command/result naming conventions;
+- application-layer dependency rules;
+- representative application-layer unit tests.
 
-### Completion Criteria
+### Verification
 
-- agreed application-layer structure;
-- common exception model implemented;
-- transaction strategy established;
-- current-user/context abstraction established;
-- representative service tests passing;
-- Maven build successful;
-- roadmap reviewed and updated.
+- Maven clean test successful;
+- 7 application validation tests executed;
+- 0 test failures;
+- 0 test errors;
+- Spring Boot application startup successful;
+- JPA repositories initialized successfully;
+- Git whitespace verification successful;
+- commits pushed to `origin/main`;
+- working tree clean.
+
+### Git History
+
+- `6de9379` — Milestone 1C.2: Establish application service foundation
+- `e16a9f4` — Milestone 1C.2: Add common application exception model
+- `530e8d4` — Milestone 1C.2: Add application execution context abstractions
+- `232ffe2` — Milestone 1C.2: Add common application validation support
+- `b34d539` — Milestone 1C.2: Document application service conventions
+
+### Roadmap Impact
+
+No adverse roadmap impact identified.
+
+The application-service foundation is now established for the
+Administration and Master Data APIs, security, shift operations,
+receipt/OCR, payment, reconciliation and approval milestones.
+
+### Delivery Assessment
+
+**Target Production Release:** 31-Oct-2026
+**Current Delivery Confidence:** ON TRACK
+
+The parallel UI/UX prototype track shall now begin while backend
+development continues with Milestone 1C.3.
 
 ---
 
 ## Milestone 1C.3 — Administration and Master Data APIs
 
-**Status:** PLANNED
+**Status:** NEXT
 **Target:** Aug-2026
 
 Implement application services and REST APIs for:
@@ -530,7 +558,8 @@ Phase 1D shall partially execute in parallel with Phase 1C.
 
 ## Milestone 1D.1 — UI/UX Prototype Foundation
 
-**Target:** Start during Aug-2026
+**Status:** IN PROGRESS
+**Start Date:** 17-Aug-2026
 
 Prepare:
 
