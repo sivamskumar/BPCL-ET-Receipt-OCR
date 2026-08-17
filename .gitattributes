@@ -45,6 +45,19 @@ pom.xml         text eol=lf
 *.json          text eol=lf
 
 # -----------------------------------------------------------------------------
+# Frontend Source
+# -----------------------------------------------------------------------------
+*.js            text eol=lf
+*.jsx           text eol=lf
+*.ts            text eol=lf
+*.tsx           text eol=lf
+*.css           text eol=lf
+*.html          text eol=lf
+*.svg           text eol=lf
+*.mjs           text eol=lf
+*.cjs           text eol=lf
+
+# -----------------------------------------------------------------------------
 # SQL
 # -----------------------------------------------------------------------------
 *.sql           text eol=lf
