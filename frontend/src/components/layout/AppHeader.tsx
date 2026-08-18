@@ -1,6 +1,7 @@
 import AccountCircleOutlinedIcon from '@mui/icons-material/AccountCircleOutlined';
 import LocalGasStationOutlinedIcon from '@mui/icons-material/LocalGasStationOutlined';
 import { Box, Typography } from '@mui/material';
+import { prototypeUser } from '../../app/prototype/prototypeUser';
 
 function AppHeader() {
   return (
@@ -63,21 +64,30 @@ function AppHeader() {
             textAlign: 'right',
           }}
         >
-          <Typography
-            variant="body2"
-            sx={{
-              fontWeight: 600,
-            }}
-          >
-            Demo Station
-          </Typography>
+		<Typography
+		  variant="body2"
+		  sx={{
+		    fontWeight: 600,
+		  }}
+		>
+		  {prototypeUser.name}
+		</Typography>
 
-          <Typography
-            variant="caption"
-            color="text.secondary"
-          >
-            Employee
-          </Typography>
+		<Typography
+		  variant="body2"
+		  sx={{
+		    fontWeight: 600,
+		  }}
+		>
+		  {prototypeUser.stationName}
+		</Typography>
+
+		<Typography
+		  variant="caption"
+		  color="text.secondary"
+		>
+		  {prototypeUser.role}
+		</Typography>
         </Box>
 
         <AccountCircleOutlinedIcon
