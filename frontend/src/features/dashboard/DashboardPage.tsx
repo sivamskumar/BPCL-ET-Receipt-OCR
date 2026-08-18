@@ -1,17 +1,24 @@
-import { Typography } from '@mui/material';
+
+import { prototypeUser } from '../../app/prototype/prototypeUser';
+import EmployeeDashboard from './EmployeeDashboard';
+import ReviewerDashboard from './ReviewerDashboard';
+import ApproverDashboard from './ApproverDashboard';
+import AdministratorDashboard from './AdministratorDashboard';
 
 function DashboardPage() {
-  return (
-    <Typography
-      variant="h4"
-      component="h1"
-      sx={{
-        color: 'primary.dark',
-      }}
-    >
-      Dashboard
-    </Typography>
-  );
+  switch (prototypeUser.role) {
+    case 'EMPLOYEE':
+      return <EmployeeDashboard />;
+
+	  case 'REVIEWER':
+	    return <ReviewerDashboard />;
+
+		case 'APPROVER':
+		  return <ApproverDashboard />;
+
+		  case 'ADMINISTRATOR':
+		    return <AdministratorDashboard />;
+  }
 }
 
 export default DashboardPage;
