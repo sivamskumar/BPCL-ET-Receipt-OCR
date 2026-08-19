@@ -9,5 +9,5 @@ export type PrototypeUser = {
 export const prototypeUser: PrototypeUser = {
   name: 'Sujith',
   stationName: 'Demo Station',
-  role: 'EMPLOYEE',
+  role: 'APPROVER',
 };

@@ -45,7 +45,8 @@ function AppNavigation({
   );
 
   const isItemSelected = (item: NavigationItem) =>
-    location.pathname === item.path;
+    location.pathname === item.path ||
+    location.pathname.startsWith(`${item.path}/`);
 
   const isGroupSelected = (group: NavigationGroup) =>
     group.children.some((child) => location.pathname === child.path);

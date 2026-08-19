@@ -8,6 +8,15 @@ import CollectionsPage from '../features/collections/CollectionsPage';
 import ReconciliationPage from '../features/reconciliation/ReconciliationPage';
 import ShiftPage from '../features/shift/ShiftPage';
 import PrototypePage from '../features/common/PrototypePage';
+import ReceiptCapturePage from '../features/receipt/ReceiptCapturePage';
+import OcrReviewPage from '../features/receipt/OcrReviewPage';
+import ReconciliationDetailPage from '../features/reconciliation/ReconciliationDetailPage';
+import PendingReviewsPage from '../features/review/PendingReviewsPage';
+import ReconciliationReviewPage from '../features/review/ReconciliationReviewPage';
+import PendingApprovalsPage from '../features/approval/PendingApprovalsPage';
+import ReconciliationApprovalPage from '../features/approval/ReconciliationApprovalPage';
+import ApprovalHistoryPage from '../features/approval/ApprovalHistoryPage';
+import ApprovalHistoryDetailPage from '../features/approval/ApprovalHistoryDetailPage';
 
 const router = createBrowserRouter([
   {
@@ -50,11 +59,23 @@ const router = createBrowserRouter([
       },
 	  {
 	    path: 'receipts',
-	    element: <PrototypePage title="Receipts / OCR" />,
+	    element: <ReceiptCapturePage />,
+	  },
+	  {
+	    path: 'receipts/ocr-review',
+	    element: <OcrReviewPage />,
+	  },
+	  {
+	    path: 'reconciliation/detail',
+	    element: <ReconciliationDetailPage />,
 	  },
 	  {
 	    path: 'reviews/pending',
-	    element: <PrototypePage title="Pending Reviews" />,
+	    element: <PendingReviewsPage />,
+	  },
+	  {
+	    path: 'reviews/pending/detail',
+	    element: <ReconciliationReviewPage />,
 	  },
 	  {
 	    path: 'reviews/history',
@@ -62,11 +83,19 @@ const router = createBrowserRouter([
 	  },
 	  {
 	    path: 'approvals/pending',
-	    element: <PrototypePage title="Pending Approvals" />,
+	    element: <PendingApprovalsPage />,
+	  },
+	  {
+	    path: 'approvals/pending/detail',
+	    element: <ReconciliationApprovalPage />,
 	  },
 	  {
 	    path: 'approvals/history',
-	    element: <PrototypePage title="Approval History" />,
+	    element: <ApprovalHistoryPage />,
+	  },
+	  {
+	    path: 'approvals/history/detail',
+	    element: <ApprovalHistoryDetailPage />,
 	  },
 	  {
 	    path: 'reports',

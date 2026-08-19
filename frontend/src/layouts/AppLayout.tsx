@@ -84,11 +84,15 @@ function AppLayout() {
           sx={{
             flexGrow: 1,
             minWidth: 0,
-            p: {
-              xs: 2,
-              sm: 2.5,
-              md: 3,
-            },
+			px: {
+			  xs: 2,
+			  sm: 2.5,
+			  md: 3,
+			},
+			py: {
+			  xs: 2,
+			  md: 2,
+			},
           }}
         >
           <Outlet />
