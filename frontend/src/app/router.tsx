@@ -17,6 +17,10 @@ import PendingApprovalsPage from '../features/approval/PendingApprovalsPage';
 import ReconciliationApprovalPage from '../features/approval/ReconciliationApprovalPage';
 import ApprovalHistoryPage from '../features/approval/ApprovalHistoryPage';
 import ApprovalHistoryDetailPage from '../features/approval/ApprovalHistoryDetailPage';
+import ReviewHistoryPage from '../features/review/ReviewHistoryPage';
+import ReviewHistoryDetailPage from '../features/review/ReviewHistoryDetailPage';
+import ReportsPage from '../features/reports/ReportsPage';
+import ReportDetailPage from '../features/reports/ReportDetailPage';
 
 const router = createBrowserRouter([
   {
@@ -79,7 +83,11 @@ const router = createBrowserRouter([
 	  },
 	  {
 	    path: 'reviews/history',
-	    element: <PrototypePage title="Review History" />,
+	    element: <ReviewHistoryPage />,
+	  },
+	  {
+	    path: 'reviews/history/detail',
+	    element: <ReviewHistoryDetailPage />,
 	  },
 	  {
 	    path: 'approvals/pending',
@@ -99,7 +107,11 @@ const router = createBrowserRouter([
 	  },
 	  {
 	    path: 'reports',
-	    element: <PrototypePage title="Reports" />,
+	    element: <ReportsPage />,
+	  },
+	  {
+	    path: 'reports/detail',
+	    element: <ReportDetailPage />,
 	  },
 	  {
 	    path: 'admin/organization',
